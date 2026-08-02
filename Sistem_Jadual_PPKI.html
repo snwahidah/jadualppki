@@ -5,126 +5,194 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sistem Jadual Waktu PPKI — SK Taman Gembira</title>
 <style>
-  :root{ --ink:#1a1a2e; --line:#2b2b40; --soft:#666; --bg:#f4f5f7; }
+  :root{
+    --ink:#101828; --soft:#5b6472; --line:#39394d; --bg:#f4f5f7;
+    --glass:rgba(255,255,255,.62); --glass2:rgba(255,255,255,.5);
+    --glass-brd:rgba(255,255,255,.7);
+    --shadow:0 8px 32px rgba(31,38,135,.13);
+    --ease:cubic-bezier(.22,.68,.3,1);
+  }
   *{box-sizing:border-box}
-  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:var(--ink)}
-  .wrap{max-width:1220px;margin:0 auto;padding:14px 18px 60px}
-  header{text-align:center;margin-bottom:10px}
-  header h1{margin:0;font-size:20px;letter-spacing:.5px}
-  header .sub{color:var(--soft);font-size:13px;margin-top:2px}
-  header .title2{font-weight:700;font-size:15px;margin-top:6px;letter-spacing:1px}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;color:var(--ink);min-height:100vh;
+    background:linear-gradient(135deg,#eef2ff 0%,#fdf2f8 38%,#ecfeff 70%,#f0fdf4 100%);background-attachment:fixed}
 
-  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:10px 0 14px}
-  .tabbtn,.act{border:1px solid #c9cdd4;background:#fff;padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer}
-  .tabbtn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .act.primary{background:#0b6e4f;color:#fff;border-color:#0b6e4f;font-weight:600}
-  .act:hover,.tabbtn:hover{filter:brightness(.96)}
-  .pill{padding:6px 12px;border-radius:20px;font-size:12.5px;font-weight:600}
-  .pill.ok{background:#d9f2e4;color:#0b6e4f}
-  .pill.err{background:#fde3e0;color:#c0392b}
+  /* ===== Latar "liquid glass": blob gradien terapung ===== */
+  .bg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+  .blob{position:absolute;border-radius:50%;filter:blur(72px);opacity:.5;animation:float 22s ease-in-out infinite alternate;will-change:transform}
+  .b1{width:46vw;height:46vw;background:radial-gradient(circle at 35% 35%,#93c5fd,#60a5fa);top:-14vw;left:-10vw}
+  .b2{width:38vw;height:38vw;background:radial-gradient(circle at 40% 40%,#f9a8d4,#f472b6);top:6vw;right:-12vw;animation-delay:-7s;animation-duration:27s}
+  .b3{width:42vw;height:42vw;background:radial-gradient(circle at 40% 40%,#86efac,#4ade80);bottom:-16vw;left:14vw;animation-delay:-13s;animation-duration:24s}
+  .b4{width:30vw;height:30vw;background:radial-gradient(circle at 40% 40%,#fde68a,#facc15);bottom:6vw;right:12vw;animation-delay:-4s;animation-duration:30s}
+  @keyframes float{
+    0%{transform:translate(0,0) scale(1) rotate(0deg)}
+    50%{transform:translate(4vw,-3vw) scale(1.12) rotate(8deg)}
+    100%{transform:translate(-3vw,3vw) scale(.94) rotate(-6deg)}
+  }
+
+  .wrap{max-width:1240px;margin:0 auto;padding:16px 18px 70px}
+
+  header{text-align:center;margin-bottom:12px;animation:rise .55s var(--ease) both}
+  header h1{margin:0;font-size:22px;letter-spacing:.6px;font-weight:800;
+    background:linear-gradient(92deg,#1e3a8a 0%,#0f766e 55%,#7c3aed 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  header .sub{color:var(--soft);font-size:12.5px;margin-top:3px}
+  header .title2{font-weight:700;font-size:14px;margin-top:7px;letter-spacing:2px;color:#334155}
+
+  /* ===== Bar alat kaca melekat ===== */
+  .toolbar{position:sticky;top:10px;z-index:50;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
+    margin:10px 0 18px;padding:10px 14px;border-radius:20px;
+    background:var(--glass);backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);
+    border:1px solid var(--glass-brd);box-shadow:var(--shadow);animation:rise .55s .06s var(--ease) both}
+  .tabbtn,.act{border:1px solid rgba(255,255,255,.75);background:rgba(255,255,255,.45);color:var(--ink);
+    padding:8px 15px;border-radius:999px;font-size:13px;cursor:pointer;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .25s}
+  .tabbtn:hover,.act:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(31,38,135,.16);background:rgba(255,255,255,.85)}
+  .tabbtn:active,.act:active{transform:translateY(0) scale(.96)}
+  .tabbtn.active{background:linear-gradient(135deg,#1e293b,#3b4a63);color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(15,23,42,.35)}
+  .act.primary{background:linear-gradient(135deg,#059669,#0d9488);color:#fff;border:none;font-weight:600;position:relative;overflow:hidden}
+  .act.primary:hover{background:linear-gradient(135deg,#047857,#0f766e)}
+  .act.primary::after{content:'';position:absolute;top:0;left:-80%;width:55%;height:100%;
+    background:linear-gradient(105deg,transparent,rgba(255,255,255,.5),transparent);animation:shine 3.4s ease-in-out infinite}
+  @keyframes shine{0%,55%{left:-80%}100%{left:135%}}
+  .pill{padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:700;border:1px solid rgba(255,255,255,.7);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:all .3s var(--ease)}
+  .pill.ok{background:rgba(209,250,229,.75);color:#065f46}
+  .pill.err{background:rgba(254,226,226,.8);color:#b91c1c;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.25)}50%{box-shadow:0 0 0 7px rgba(220,38,38,0)}}
   #jana-status{font-size:12.5px;color:var(--soft)}
 
-  .gridblock{background:#fff;border:1px solid #dfe2e8;border-radius:10px;padding:14px 16px;margin-bottom:18px;overflow-x:auto}
-  .gridblock h3{margin:0 0 4px;font-size:15px;letter-spacing:.5px}
+  /* ===== Kad kaca ===== */
+  .gridblock,.daycard,.listpick,.issuebox,.settings fieldset,.panduan{
+    background:var(--glass);backdrop-filter:blur(16px) saturate(1.45);-webkit-backdrop-filter:blur(16px) saturate(1.45);
+    border:1px solid var(--glass-brd);border-radius:20px;box-shadow:var(--shadow)}
+  .gridblock{padding:16px 18px;margin-bottom:20px;overflow-x:auto;transition:box-shadow .3s var(--ease)}
+  .gridblock:hover{box-shadow:0 12px 40px rgba(31,38,135,.18)}
+  .gridblock h3{margin:0 0 4px;font-size:15.5px;letter-spacing:.5px}
   .tahap{color:var(--soft);font-weight:500;font-size:12.5px}
   .tamat{color:var(--soft);font-size:11.5px;margin-bottom:8px}
-  .dot{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid #0003;vertical-align:-1px;margin-right:2px}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:4px;border:1px solid #0003;vertical-align:-1px;margin-right:2px}
 
-  table.jadual{border-collapse:collapse;width:100%;min-width:860px}
+  /* animasi masuk berperingkat */
+  #main>*{animation:rise .45s var(--ease) both}
+  #main>*:nth-child(2){animation-delay:.07s}
+  #main>*:nth-child(3){animation-delay:.14s}
+  #main>*:nth-child(4){animation-delay:.2s}
+  #main>*:nth-child(n+5){animation-delay:.25s}
+  body[data-tab="editor"] #main>*,body[data-tab="tetapan"] #main>*{animation:none}
+  @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+  /* ===== Jadual ===== */
+  table.jadual{border-collapse:collapse;width:100%;min-width:860px;background:rgba(255,255,255,.55);border-radius:10px}
   .jadual th,.jadual td{border:1px solid var(--line);text-align:center;padding:2px}
   .jadual thead th{background:#eef0f4;font-size:12px;padding:4px 2px}
   .pnum{font-weight:700;font-size:13px}
   .ptime{font-size:9.5px;color:var(--soft);font-weight:400}
   .daycol{width:86px;font-weight:700;font-size:12px;background:#eef0f4}
-  .jadual td{height:44px;font-size:12px}
-  .rehat-col,.rehat-cell{background:#c9cdd4 !important;width:20px;font-size:9px;line-height:1.15;font-weight:700;color:#333}
+  .jadual .daycol{position:sticky;left:0;z-index:2;box-shadow:1px 0 0 var(--line)}
+  .jadual thead th.daycol{z-index:3}
+  .jadual td{height:44px;font-size:12px;transition:filter .2s}
+  .subcell:hover,.editcell:hover{filter:brightness(1.08) saturate(1.1)}
+  .rehat-col,.rehat-cell{background:linear-gradient(180deg,#cdd2da,#bfc5cf) !important;width:20px;font-size:9px;line-height:1.15;font-weight:700;color:#333}
   .scode{font-weight:700;font-size:13px}
   .tname{font-size:9.5px;line-height:1.1}
   .nosession{background:repeating-linear-gradient(45deg,#f2f2f2,#f2f2f2 5px,#e4e4e4 5px,#e4e4e4 10px)}
   .perhim{background:#f5f0dc;font-size:9px;letter-spacing:.5px;font-weight:700}
   .perdana{background:#4a4a58;color:#fff;font-size:8.8px;line-height:1.15;padding:1px}
-  .freecell{background:#fff}
-  td.bad{box-shadow:inset 0 0 0 3px #e74c3c}
+  .freecell{background:rgba(255,255,255,.75)}
+  td.bad{box-shadow:inset 0 0 0 3px #e74c3c;animation:badpulse 1.4s ease-in-out infinite}
+  @keyframes badpulse{0%,100%{box-shadow:inset 0 0 0 3px #e74c3c}50%{box-shadow:inset 0 0 0 5px #ef8a7f}}
 
-  .editcell select{width:100%;border:none;background:transparent;font-weight:700;font-size:13px;text-align:center;cursor:pointer}
-  .editcell .tname{pointer-events:none}
-  .chips{margin-top:8px}
-  .chip{display:inline-block;border-radius:12px;padding:2px 9px;font-size:11.5px;margin:2px;border:1.5px solid}
-  .chip.ok{border-color:#0b6e4f;color:#0b6e4f;background:#eafaf2}
-  .chip.notok{border-color:#c0392b;color:#c0392b;background:#fdeeec;font-weight:700}
-  .issuebox{background:#fdeeec;border:1px solid #f3b6ae;border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:13px}
-  .issuebox.ok{background:#eafaf2;border-color:#a8dcc4;color:#0b6e4f;font-weight:600}
+  .editcell{cursor:pointer}
+  .chips{margin-top:10px}
+  .chip{display:inline-block;border-radius:999px;padding:3px 11px;font-size:11.5px;margin:2px;border:1.5px solid;backdrop-filter:blur(6px);transition:transform .2s var(--ease)}
+  .chip:hover{transform:translateY(-1px)}
+  .chip.ok{border-color:#0b6e4f;color:#0b6e4f;background:rgba(234,250,242,.8)}
+  .chip.notok{border-color:#c0392b;color:#c0392b;background:rgba(253,238,236,.9);font-weight:700}
+  .issuebox{padding:12px 18px;margin-bottom:16px;font-size:13px;border-color:rgba(243,182,174,.8);background:rgba(253,238,236,.75)}
+  .issuebox.ok{background:rgba(234,250,242,.75);border-color:rgba(168,220,196,.8);color:#0b6e4f;font-weight:600}
   .issuebox ul{margin:6px 0 0;padding-left:20px}
 
-  table.mini{border-collapse:collapse;font-size:12.5px;margin:6px 0}
+  table.mini{border-collapse:collapse;font-size:12.5px;margin:6px 0;background:rgba(255,255,255,.55);border-radius:8px}
   .mini th,.mini td{border:1px solid #c9cdd4;padding:4px 8px;text-align:center}
   .mini thead th{background:#eef0f4}
 
-  .settings fieldset{background:#fff;border:1px solid #dfe2e8;border-radius:10px;margin-bottom:14px;padding:10px 16px}
-  .settings legend{font-weight:700;font-size:13.5px;padding:0 6px}
+  /* ===== Tetapan ===== */
+  .settings fieldset{margin-bottom:16px;padding:12px 18px}
+  .settings legend{font-weight:700;font-size:13.5px;padding:0 8px;background:rgba(255,255,255,.75);border-radius:8px}
   .settings label{display:inline-block;margin:4px 10px 4px 0;font-size:12.5px}
-  .settings input,.settings select{font-size:12.5px;padding:3px 6px;border:1px solid #c9cdd4;border-radius:6px}
+  .settings input,.settings select{font-size:12.5px;padding:4px 8px;border:1px solid rgba(180,186,196,.8);border-radius:8px;background:rgba(255,255,255,.8);transition:box-shadow .2s}
+  .settings input:focus{outline:none;box-shadow:0 0 0 3px rgba(59,130,246,.25)}
   .settings input[type=color]{padding:0;width:40px;height:26px}
   .wide{width:340px}.w120{width:120px}.w80{width:80px}.w60{width:58px}.w40{width:44px}
-  .sm{font-size:11.5px;padding:3px 9px;border-radius:6px;border:1px solid #c9cdd4;background:#fff;cursor:pointer}
+  .sm{font-size:11.5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(180,186,196,.8);background:rgba(255,255,255,.7);cursor:pointer;transition:all .2s var(--ease)}
+  .sm:hover{transform:translateY(-1px);background:#fff}
   .sm.danger{color:#c0392b;border-color:#e8b3ac}
   .hint{font-size:11.5px;color:var(--soft);margin-top:6px}
-  .hint.big{font-size:13px;background:#fff8dc;border:1px solid #e8d88a;border-radius:8px;padding:10px 14px;color:#5a4d00}
+  .hint.big{font-size:13px;background:rgba(255,248,220,.8);border:1px solid rgba(232,216,138,.8);border-radius:12px;padding:12px 16px;color:#5a4d00;backdrop-filter:blur(8px)}
   .tamat-edit{font-size:12px;margin-bottom:6px}
-  .unav td.uv{cursor:pointer;width:52px;height:26px}
+  .unav td.uv{cursor:pointer;width:52px;height:26px;transition:background .2s}
+  .unav td.uv:hover{background:#fce8e6}
   .unav td.uv.on{background:#c0392b;color:#fff;font-weight:700}
-  .panduan{background:#fff;border:1px solid #dfe2e8;border-radius:10px;padding:8px 22px;font-size:13.5px;line-height:1.55}
+  .panduan{padding:10px 24px;font-size:13.5px;line-height:1.6}
 
-  .toast{position:fixed;left:50%;bottom:-120px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;transition:bottom .3s;z-index:120;max-width:80%}
-  .toast.show{bottom:24px}
-  .toast.err{background:#c0392b}
+  .ddbtn{border:1px solid rgba(180,186,196,.8);background:rgba(255,255,255,.7);border-radius:999px;padding:4px 11px;font-size:12px;cursor:pointer;transition:all .2s var(--ease)}
+  .ddbtn:hover{transform:translateY(-1px);background:#fff;box-shadow:0 4px 12px rgba(31,38,135,.12)}
+  .ddbtn.sel{background:linear-gradient(135deg,#1e293b,#3b4a63);color:#fff;border-color:transparent}
 
-  #modal{position:fixed;inset:0;background:#0007;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
-  #modal[hidden]{display:none}
-  .modal-box{background:#fff;border-radius:12px;padding:16px 20px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 12px 40px #0005}
-  .modal-box h4{margin:0 0 10px;font-size:14.5px}
-  .optlist{display:flex;flex-direction:column;gap:6px}
-  .optbtn{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:1px solid #d6dae1;background:#fff;border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer}
-  .optbtn:hover{background:#f0f4f8}
-  .optbtn.cur{outline:2px solid var(--ink)}
-  .optbtn small{color:var(--soft)}
-  .optcode{display:inline-block;min-width:46px;text-align:center;font-weight:700;border-radius:6px;padding:4px 6px;border:1px solid #0002}
-  .modal-foot{margin-top:12px;text-align:right}
-  .act.danger2{background:#c0392b;color:#fff;border-color:#c0392b}
-  .jsonta{width:100%;height:180px;font-family:monospace;font-size:11px;border:1px solid #c9cdd4;border-radius:8px;padding:8px}
-  .ddbtn{border:1px solid #c9cdd4;background:#fff;border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
-  .ddbtn:hover{background:#f0f4f8}
-  .ddbtn.sel{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .editcell{cursor:pointer}
-  .editcell:hover{filter:brightness(.92)}
-
-  /* Paparan senarai (mudah alih) */
-  .listpick{background:#fff;border:1px solid #dfe2e8;border-radius:10px;padding:10px 14px;margin-bottom:10px}
-  .listpick .ddbtn{margin:2px 2px 2px 0;padding:6px 12px}
-  .daycard{background:#fff;border:1px solid #dfe2e8;border-radius:10px;padding:10px 14px;margin-bottom:10px}
+  /* ===== Senarai (mudah alih) ===== */
+  .listpick{padding:12px 16px;margin-bottom:12px}
+  .listpick .ddbtn{margin:2px 2px 2px 0;padding:7px 14px}
+  .daycard{padding:12px 16px;margin-bottom:12px;transition:box-shadow .3s var(--ease)}
+  .daycard:hover{box-shadow:0 12px 36px rgba(31,38,135,.16)}
   .daycard h4{margin:2px 0 6px;font-size:14px;letter-spacing:.5px}
-  .lrow{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #f0f0f3;font-size:13.5px}
+  .lrow{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(200,205,215,.4);font-size:13.5px}
   .lrow:last-child{border-bottom:none}
   .ltime{color:var(--soft);min-width:88px;font-size:11.5px;flex-shrink:0}
-  .lchip{min-width:48px;text-align:center;font-weight:700;border-radius:6px;padding:4px 6px;border:1px solid #0002;font-size:12px;flex-shrink:0}
+  .lchip{min-width:48px;text-align:center;font-weight:700;border-radius:8px;padding:4px 6px;border:1px solid #0002;font-size:12px;flex-shrink:0}
   .lmain{line-height:1.25}
   .lmain small{color:var(--soft)}
-  .lrehat{background:#f6f7f9;border-radius:6px;padding-left:6px;color:var(--soft);font-size:12px}
+  .lrehat{background:rgba(238,240,244,.7);border-radius:8px;padding-left:6px;color:var(--soft);font-size:12px}
   .lperdana .lmain{color:#4a4a58;font-size:12.5px}
 
-  /* Lajur hari kekal semasa leret */
-  .jadual .daycol{position:sticky;left:0;z-index:2;box-shadow:1px 0 0 var(--line)}
-  .jadual thead th.daycol{z-index:3}
+  /* ===== Modal kaca ===== */
+  #modal{position:fixed;inset:0;background:rgba(15,23,42,.35);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+    z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .22s ease both}
+  #modal[hidden]{display:none}
+  @keyframes fadeIn{from{opacity:0}}
+  .modal-box{background:rgba(255,255,255,.86);backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);
+    border:1px solid rgba(255,255,255,.8);border-radius:22px;padding:18px 22px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;
+    box-shadow:0 20px 60px rgba(15,23,42,.3);animation:pop .32s var(--ease) both}
+  @keyframes pop{from{opacity:0;transform:scale(.92) translateY(14px)}}
+  .modal-box h4{margin:0 0 12px;font-size:14.5px}
+  .optlist{display:flex;flex-direction:column;gap:7px}
+  .optbtn{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:1px solid rgba(210,215,225,.8);
+    background:rgba(255,255,255,.75);border-radius:12px;padding:9px 12px;font-size:13px;cursor:pointer;
+    transition:transform .2s var(--ease),background .2s,box-shadow .2s}
+  .optbtn:hover{background:#fff;transform:translateX(4px);box-shadow:0 4px 14px rgba(31,38,135,.12)}
+  .optbtn.cur{outline:2px solid #1e293b}
+  .optbtn small{color:var(--soft)}
+  .optcode{display:inline-block;min-width:46px;text-align:center;font-weight:700;border-radius:8px;padding:4px 6px;border:1px solid #0002}
+  .modal-foot{margin-top:14px;text-align:right}
+  .act.danger2{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none}
+  .jsonta{width:100%;height:180px;font-family:monospace;font-size:11px;border:1px solid rgba(180,186,196,.8);border-radius:12px;padding:10px;background:rgba(255,255,255,.85)}
+
+  .toast{position:fixed;left:50%;bottom:-120px;transform:translateX(-50%);
+    background:rgba(16,24,40,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    color:#fff;padding:11px 22px;border-radius:999px;font-size:13px;transition:bottom .4s var(--ease);z-index:120;max-width:80%;
+    border:1px solid rgba(255,255,255,.15);box-shadow:0 10px 30px rgba(15,23,42,.35)}
+  .toast.show{bottom:24px}
+  .toast.err{background:rgba(185,28,28,.92)}
 
   @media (max-width:640px){
     .wrap{padding:8px 8px 40px}
-    header h1{font-size:14.5px}
+    header h1{font-size:15px}
     header .sub{font-size:10px}
-    header .title2{font-size:11px;letter-spacing:.5px}
-    .toolbar{gap:5px;margin:8px 0 10px}
-    .tabbtn,.act{padding:6px 9px;font-size:11.5px;border-radius:7px}
-    .pill{font-size:11px;padding:4px 9px}
-    .gridblock{padding:8px 8px;border-radius:8px}
+    header .title2{font-size:11px;letter-spacing:1px}
+    .toolbar{gap:5px;margin:8px 0 12px;padding:8px 9px;top:6px;border-radius:16px}
+    .tabbtn,.act{padding:6px 10px;font-size:11.5px}
+    .pill{font-size:11px;padding:4px 10px}
+    .gridblock{padding:9px 9px;border-radius:14px}
     table.jadual{min-width:620px}
     .jadual td{height:36px;font-size:10px;padding:1px}
     .scode{font-size:10.5px}
@@ -132,27 +200,35 @@
     .daycol{width:52px;font-size:9.5px}
     .pnum{font-size:11px}
     .ptime{font-size:8px}
-    .modal-box{padding:12px 14px;max-height:90vh}
-    .optbtn{padding:10px 10px}
+    .modal-box{padding:14px 16px;max-height:90vh;border-radius:18px}
+    .optbtn{padding:11px 11px}
     .mini th,.mini td{padding:3px 5px;font-size:11px}
     .wide{width:100%}
     .ltime{min-width:80px}
+    .blob{filter:blur(52px)}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation:none !important;transition:none !important}
   }
 
   @media print{
     @page{size:A4 landscape;margin:8mm}
     body{background:#fff}
-    .toolbar,.toast,.issuebox,.chips,.hint{display:none !important}
+    .bg,.toolbar,.toast,#modal,.issuebox,.chips,.hint{display:none !important}
     .wrap{max-width:none;padding:0}
-    .gridblock{border:none;padding:4px 0;margin:0 0 8px;overflow:visible;page-break-inside:avoid;break-inside:avoid}
+    header h1{color:#000;background:none;-webkit-background-clip:unset}
+    .gridblock,.daycard,.listpick{background:#fff;backdrop-filter:none;border:none;box-shadow:none;padding:4px 0;margin:0 0 8px;overflow:visible;page-break-inside:avoid;break-inside:avoid;animation:none}
+    #main>*{animation:none !important}
     body[data-tab="guru"] .gridblock,body[data-tab="kelas"] .gridblock{page-break-after:always}
     body[data-tab="kelas"] .gridblock:last-child,body[data-tab="guru"] .gridblock:last-child{page-break-after:auto}
-    table.jadual{min-width:0}
+    table.jadual{min-width:0;background:#fff}
     .editcell select{appearance:none;-webkit-appearance:none}
   }
 </style>
 </head>
 <body data-tab="kelas">
+<div class="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div></div>
 <div class="wrap">
   <header>
     <h1 id="hdr-school">—</h1>
@@ -166,11 +242,11 @@
     <button class="tabbtn" data-tab="editor">Editor</button>
     <button class="tabbtn" data-tab="tetapan">Tetapan</button>
     <button class="tabbtn" data-tab="panduan">Panduan</button>
-    <span style="width:10px"></span>
+    <span style="width:6px"></span>
     <button class="act primary" data-act="jana">⚡ Jana Jadual</button>
     <button class="act" data-act="cetak">🖨 Cetak</button>
-    <button class="act" data-act="eksport">⬇ Eksport JSON</button>
-    <button class="act" data-act="import">⬆ Import JSON</button>
+    <button class="act" data-act="eksport">⬇ Eksport</button>
+    <button class="act" data-act="import">⬆ Import</button>
     <span id="status-pill" class="pill ok">…</span>
     <span id="jana-status"></span>
   </div>
