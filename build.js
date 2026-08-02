@@ -92,5 +92,7 @@ const app = fs.readFileSync('/home/user/jadual/app.js','utf8');
 let html = fs.readFileSync('/home/user/jadual/template.html','utf8');
 html = html.replace('/*__STATE__*/null', JSON.stringify(state));
 html = html.replace('/*__APP__*/', () => app);
+const logoB64 = fs.readFileSync('/home/user/jadual/logo_small.jpg').toString('base64');
+html = html.replace('__LOGO__', 'data:image/jpeg;base64,' + logoB64);
 fs.writeFileSync('/home/user/jadual/Sistem_Jadual_PPKI.html', html);
 console.log('OK', (html.length/1024).toFixed(1)+'KB');

@@ -32,6 +32,12 @@
   .wrap{max-width:1240px;margin:0 auto;padding:16px 18px 70px}
 
   header{text-align:center;margin-bottom:12px;animation:rise .55s var(--ease) both}
+  .hdr-flex{display:flex;align-items:center;justify-content:center;gap:16px}
+  .hdr-flex>div{text-align:center}
+  .logo{width:76px;height:76px;border-radius:50%;object-fit:cover;flex-shrink:0;
+    border:3px solid rgba(255,255,255,.85);box-shadow:0 6px 20px rgba(31,38,135,.22);
+    background:#fff;animation:logofloat 6s ease-in-out infinite}
+  @keyframes logofloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
   header h1{margin:0;font-size:22px;letter-spacing:.6px;font-weight:800;
     background:linear-gradient(92deg,#1e3a8a 0%,#0f766e 55%,#7c3aed 100%);
     -webkit-background-clip:text;background-clip:text;color:transparent}
@@ -189,6 +195,8 @@
     header h1{font-size:15px}
     header .sub{font-size:10px}
     header .title2{font-size:11px;letter-spacing:1px}
+    .hdr-flex{gap:10px}
+    .logo{width:50px;height:50px;border-width:2px}
     .toolbar{gap:5px;margin:8px 0 12px;padding:8px 9px;top:6px;border-radius:16px}
     .tabbtn,.act{padding:6px 10px;font-size:11.5px}
     .pill{font-size:11px;padding:4px 10px}
@@ -225,6 +233,7 @@
     .bg,.toolbar,.toast,#modal,.issuebox,.chips,.hint{display:none !important}
     .wrap{max-width:none;padding:0}
     header h1{color:#000;background:none;-webkit-background-clip:unset}
+    .logo{width:60px;height:60px;box-shadow:none;animation:none;border:none}
     .gridblock,.daycard,.listpick{background:#fff;backdrop-filter:none;border:none;box-shadow:none;padding:4px 0;margin:0 0 8px;overflow:visible;page-break-inside:avoid;break-inside:avoid;animation:none}
     #main>*{animation:none !important}
     body[data-tab="guru"] .gridblock,body[data-tab="kelas"] .gridblock{page-break-after:always}
@@ -238,9 +247,14 @@
 <div class="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div></div>
 <div class="wrap">
   <header>
-    <h1 id="hdr-school">—</h1>
-    <div class="sub" id="hdr-sub">—</div>
-    <div class="title2">JADUAL WAKTU PROGRAM PENDIDIKAN KHAS INTEGRASI</div>
+    <div class="hdr-flex">
+      <img class="logo" src="__LOGO__" alt="Logo SK Taman Gembira">
+      <div>
+        <h1 id="hdr-school">—</h1>
+        <div class="sub" id="hdr-sub">—</div>
+        <div class="title2">JADUAL WAKTU PROGRAM PENDIDIKAN KHAS INTEGRASI</div>
+      </div>
+    </div>
   </header>
   <div class="toolbar">
     <button class="tabbtn" data-tab="senarai">📱 Senarai</button>
