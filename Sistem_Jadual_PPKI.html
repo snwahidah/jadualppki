@@ -329,6 +329,16 @@ let state = deepCopy(window.DEFAULT_STATE);
 // Guna semula warna yang pernah disimpan dalam pelayar ini (jika ada & jika storan dibenarkan)
 const COLOR_KEY='jadualppki_colors';
 const GHTOK_KEY='jadualppki_ghtoken';
+function syncLocalColors(){
+  // selaraskan simpanan warna peranti dengan warna semasa (dipanggil selepas terbit berjaya)
+  try{
+    if(localStorage.getItem(COLOR_KEY)!==null){
+      const m={};
+      for(const t of state.config.teachers) m[t.name]=t.color;
+      localStorage.setItem(COLOR_KEY, JSON.stringify(m));
+    }
+  }catch(e){}
+}
 function applyLocalColors(){
   try{
     const saved=JSON.parse(localStorage.getItem(COLOR_KEY)||'null');
@@ -371,7 +381,7 @@ applyLocalColors();
   }catch(e){}
   if(changed){ applyLocalColors(); renderAll(); }
 })();
-const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false, admin:false };
+const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'guru', tetapanGuru:0, busy:false, admin:false };
 const ADMIN_TABS = ['editor','tetapan','panduan'];
 const PRESET_COLORS = ['#FF8894','#FFA1B2','#8485B5','#B16F94','#176298','#5CC2C6','#B2DCA1','#7CCCAA','#A05757','#C68483','#E9BFC1','#F6DCDF'];
 function adminPin(){ return String(state.config.adminPin || '191989'); }
@@ -691,6 +701,7 @@ async function publishGlobal(){
         body: JSON.stringify({pin, state:{config:state.config, grid:state.grid}})});
       if(r.ok){
         closeModal();
+        syncLocalColors();
         toast('🌐 Diterbitkan SERTA-MERTA! Semua pengguna mendapat versi terkini sekarang (muat semula halaman mereka).');
       } else if(r.status===401){
         if(pinI){pinI.value='';pinI.focus();}
@@ -725,6 +736,7 @@ async function publishGlobal(){
     const r2=await ghPut(tok, repo.temaPath||'tema.json', JSON.stringify({updated:new Date().toISOString(), colors}, null, 1), 'Kemas kini warna tema (dari aplikasi)');
     if(r1.ok && r2.ok){
       closeModal();
+      syncLocalColors();
       toast('🌐 Diterbitkan! Semua pengguna laman akan mendapat jadual, tetapan & warna terkini dalam 1–2 minit.');
     } else {
       const bad = r1.ok ? r2 : r1;
