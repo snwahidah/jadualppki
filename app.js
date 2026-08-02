@@ -333,7 +333,7 @@ function periodHeaderCells(cfg, plist){
   let h='';
   for(let p=0;p<list.length;p++){
     h+=`<th class="pcol"><div class="pnum">${p+1}</div><div class="ptime">${list[p].start}<br>–${list[p].end}</div></th>`;
-    if(p===cfg.rehatAfter) h+=`<th class="rehat-col" title="${esc(cfg.rehatLabel)}">R<br>E<br>H<br>A<br>T</th>`;
+    if(p===cfg.rehatAfter) h+=`<th class="rehat-col" title="${esc(cfg.rehatLabel)}"></th>`;
   }
   return h;
 }
@@ -364,7 +364,7 @@ function classGridHTML(cfg, grid, cname, editable){
           html+=`<td class="subcell${bad}" style="background:${bg};color:${textColorFor(bg)}"><div class="scode">${v?esc(v):''}</div><div class="tname">${t?esc(t):''}</div></td>`;
         }
       }
-      if(p===cfg.rehatAfter) html+=`<td class="rehat-cell"></td>`;
+      if(p===cfg.rehatAfter && d===0) html+=`<td class="rehat-cell rehat-merged" rowspan="${cfg.days.length}">R<br>E<br>H<br>A<br>T</td>`;
     }
     html+=`</tr>`;
   }
@@ -409,7 +409,7 @@ function teacherGridHTML(cfg, grid, tname){
       } else {
         html+=`<td class="freecell"></td>`;
       }
-      if(p===cfg.rehatAfter) html+=`<td class="rehat-cell"></td>`;
+      if(p===cfg.rehatAfter && d===0) html+=`<td class="rehat-cell rehat-merged" rowspan="${cfg.days.length}">R<br>E<br>H<br>A<br>T</td>`;
     }
     html+=`</tr>`;
   }
