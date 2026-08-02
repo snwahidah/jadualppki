@@ -182,6 +182,12 @@
   .optbtn small{color:var(--soft)}
   .optcode{display:inline-block;min-width:46px;text-align:center;font-weight:700;border-radius:8px;padding:4px 6px;border:1px solid #0002}
   .modal-foot{margin-top:14px;text-align:right}
+  .swgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .swatch{position:relative;height:58px;border-radius:12px;border:1px solid #0002;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding:0 0 5px;transition:transform .2s var(--ease),box-shadow .2s}
+  .swatch:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 8px 18px rgba(31,38,135,.25)}
+  .swatch.cur{outline:3px solid #1e293b}
+  .swcode{background:rgba(255,255,255,.92);border-radius:999px;font-size:9.5px;font-weight:700;font-family:Consolas,Menlo,monospace;padding:2px 7px;letter-spacing:.5px;color:#333}
+  @media (max-width:640px){ .swgrid{grid-template-columns:repeat(3,1fr)} }
   .act.danger2{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none}
   .jsonta{width:100%;height:180px;font-family:monospace;font-size:11px;border:1px solid rgba(180,186,196,.8);border-radius:12px;padding:10px;background:rgba(255,255,255,.85)}
 

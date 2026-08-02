@@ -17,6 +17,7 @@ function deepCopy(o){return JSON.parse(JSON.stringify(o));}
 let state = deepCopy(window.DEFAULT_STATE);
 const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false, admin:false };
 const ADMIN_TABS = ['editor','tetapan','panduan'];
+const PRESET_COLORS = ['#FF8894','#FFA1B2','#8485B5','#B16F94','#176298','#5CC2C6','#B2DCA1','#7CCCAA','#A05757','#C68483','#E9BFC1','#F6DCDF'];
 function adminPin(){ return String(state.config.adminPin || '191989'); }
 function openPinModal(action, title){
   ui.pinAction = action;
@@ -536,7 +537,7 @@ function tetapanHTML(cfg){
   const teacherRows = cfg.teachers.map((t,i)=>`
     <tr>
       <td><input data-act="t-name" data-i="${i}" value="${esc(t.name)}"></td>
-      <td><input type="color" data-act="t-color" data-i="${i}" value="${esc(t.color)}"> <input class="w80 hexin" data-act="t-colorhex" data-i="${i}" value="${esc(t.color)}" maxlength="7" spellcheck="false" placeholder="#AABBCC" title="Tampal kod warna hex di sini"></td>
+      <td><input type="color" data-act="t-color" data-i="${i}" value="${esc(t.color)}"> <input class="w80 hexin" data-act="t-colorhex" data-i="${i}" value="${esc(t.color)}" maxlength="7" spellcheck="false" placeholder="#AABBCC" title="Tampal kod warna hex di sini"> <button class="ddbtn" data-act="pick-preset" data-i="${i}" title="Pilih dari palet pratetap">🎨</button></td>
       <td><button class="sm danger" data-act="t-del" data-i="${i}">Buang</button></td>
     </tr>`).join('');
 
@@ -776,6 +777,18 @@ document.addEventListener('click', e=>{
   if(act==='uv-guru-chip'){ ui.tetapanGuru=+t.dataset.i; renderAll(); return; }
   if(act==='list-type'){ ui.list=ui.list||{}; ui.list.type=t.dataset.v; renderAll(); return; }
   if(act==='list-name'){ ui.list=ui.list||{type:'guru'}; ui.list.name=t.dataset.v; renderAll(); return; }
+  if(act==='pick-preset'){
+    ui.presetFor=+t.dataset.i;
+    const cur=cfg.teachers[ui.presetFor]?cfg.teachers[ui.presetFor].color:'';
+    const sw=PRESET_COLORS.map(c=>`<button class="swatch${c.toUpperCase()===String(cur).toUpperCase()?' cur':''}" style="background:${c}" data-act="preset-pick" data-v="${c}"><span class="swcode">${c}</span></button>`).join('');
+    openModal(`<h4>🎨 Palet warna — ${esc(cfg.teachers[ui.presetFor].name)}</h4><div class="swgrid">${sw}</div>
+      <div class="modal-foot"><button class="act" data-act="modal-close">Tutup</button></div>`);
+    return;
+  }
+  if(act==='preset-pick'){
+    if(ui.presetFor!==undefined && cfg.teachers[ui.presetFor]) cfg.teachers[ui.presetFor].color=t.dataset.v.toUpperCase();
+    closeModal(); renderAll(); return;
+  }
   if(act==='pick-cons'){
     ui.pickCons={ci:+t.dataset.c, si:+t.dataset.i};
     openModal(consModalHTML());

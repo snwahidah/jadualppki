@@ -182,6 +182,12 @@
   .optbtn small{color:var(--soft)}
   .optcode{display:inline-block;min-width:46px;text-align:center;font-weight:700;border-radius:8px;padding:4px 6px;border:1px solid #0002}
   .modal-foot{margin-top:14px;text-align:right}
+  .swgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .swatch{position:relative;height:58px;border-radius:12px;border:1px solid #0002;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding:0 0 5px;transition:transform .2s var(--ease),box-shadow .2s}
+  .swatch:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 8px 18px rgba(31,38,135,.25)}
+  .swatch.cur{outline:3px solid #1e293b}
+  .swcode{background:rgba(255,255,255,.92);border-radius:999px;font-size:9.5px;font-weight:700;font-family:Consolas,Menlo,monospace;padding:2px 7px;letter-spacing:.5px;color:#333}
+  @media (max-width:640px){ .swgrid{grid-template-columns:repeat(3,1fr)} }
   .act.danger2{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none}
   .jsonta{width:100%;height:180px;font-family:monospace;font-size:11px;border:1px solid rgba(180,186,196,.8);border-radius:12px;padding:10px;background:rgba(255,255,255,.85)}
 
@@ -322,6 +328,7 @@ function deepCopy(o){return JSON.parse(JSON.stringify(o));}
 let state = deepCopy(window.DEFAULT_STATE);
 const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false, admin:false };
 const ADMIN_TABS = ['editor','tetapan','panduan'];
+const PRESET_COLORS = ['#FF8894','#FFA1B2','#8485B5','#B16F94','#176298','#5CC2C6','#B2DCA1','#7CCCAA','#A05757','#C68483','#E9BFC1','#F6DCDF'];
 function adminPin(){ return String(state.config.adminPin || '191989'); }
 function openPinModal(action, title){
   ui.pinAction = action;
@@ -841,7 +848,7 @@ function tetapanHTML(cfg){
   const teacherRows = cfg.teachers.map((t,i)=>`
     <tr>
       <td><input data-act="t-name" data-i="${i}" value="${esc(t.name)}"></td>
-      <td><input type="color" data-act="t-color" data-i="${i}" value="${esc(t.color)}"> <input class="w80 hexin" data-act="t-colorhex" data-i="${i}" value="${esc(t.color)}" maxlength="7" spellcheck="false" placeholder="#AABBCC" title="Tampal kod warna hex di sini"></td>
+      <td><input type="color" data-act="t-color" data-i="${i}" value="${esc(t.color)}"> <input class="w80 hexin" data-act="t-colorhex" data-i="${i}" value="${esc(t.color)}" maxlength="7" spellcheck="false" placeholder="#AABBCC" title="Tampal kod warna hex di sini"> <button class="ddbtn" data-act="pick-preset" data-i="${i}" title="Pilih dari palet pratetap">🎨</button></td>
       <td><button class="sm danger" data-act="t-del" data-i="${i}">Buang</button></td>
     </tr>`).join('');
 
@@ -1081,6 +1088,18 @@ document.addEventListener('click', e=>{
   if(act==='uv-guru-chip'){ ui.tetapanGuru=+t.dataset.i; renderAll(); return; }
   if(act==='list-type'){ ui.list=ui.list||{}; ui.list.type=t.dataset.v; renderAll(); return; }
   if(act==='list-name'){ ui.list=ui.list||{type:'guru'}; ui.list.name=t.dataset.v; renderAll(); return; }
+  if(act==='pick-preset'){
+    ui.presetFor=+t.dataset.i;
+    const cur=cfg.teachers[ui.presetFor]?cfg.teachers[ui.presetFor].color:'';
+    const sw=PRESET_COLORS.map(c=>`<button class="swatch${c.toUpperCase()===String(cur).toUpperCase()?' cur':''}" style="background:${c}" data-act="preset-pick" data-v="${c}"><span class="swcode">${c}</span></button>`).join('');
+    openModal(`<h4>🎨 Palet warna — ${esc(cfg.teachers[ui.presetFor].name)}</h4><div class="swgrid">${sw}</div>
+      <div class="modal-foot"><button class="act" data-act="modal-close">Tutup</button></div>`);
+    return;
+  }
+  if(act==='preset-pick'){
+    if(ui.presetFor!==undefined && cfg.teachers[ui.presetFor]) cfg.teachers[ui.presetFor].color=t.dataset.v.toUpperCase();
+    closeModal(); renderAll(); return;
+  }
   if(act==='pick-cons'){
     ui.pickCons={ci:+t.dataset.c, si:+t.dataset.i};
     openModal(consModalHTML());
