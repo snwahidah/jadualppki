@@ -425,6 +425,21 @@ async function publishGlobal(){
 }
 
 // ---------- Cetak satu kelas / satu guru ----------
+function isMobileDevice(){
+  try{ return window.innerWidth<700 || matchMedia('(pointer: coarse)').matches; }catch(e){ return false; }
+}
+let rotStyleEl=null;
+function mobileRotOn(){
+  if(!isMobileDevice()) return;
+  rotStyleEl=document.createElement('style');
+  rotStyleEl.textContent='@media print{ @page{ size: A4 portrait; margin: 5mm } }';
+  document.head.appendChild(rotStyleEl);
+  document.body.dataset.rotmob='1';
+}
+function mobileRotOff(){
+  if(rotStyleEl){ try{rotStyleEl.remove();}catch(e){} rotStyleEl=null; }
+  delete document.body.dataset.rotmob;
+}
 function printOne(jenis, nama){
   const cfg=state.config, grid=state.grid;
   const main=document.getElementById('main');
@@ -433,11 +448,13 @@ function printOne(jenis, nama){
     main.innerHTML = jenis==='guru' ? teacherGridHTML(cfg, grid, nama) : classGridHTML(cfg, grid, nama, false);
     document.body.dataset.tab = jenis==='guru' ? 'guru' : 'kelas';
     document.body.dataset.printone = '1';
+    mobileRotOn();
     setTimeout(()=>{
       try{ window.print(); }
       catch(err){ toast('Cetakan disekat dalam panel ini — buka laman web/fail HTML untuk mencetak.', true); }
       finally{
         setTimeout(()=>{
+          mobileRotOff();
           delete document.body.dataset.printone;
           ui.tab=prevTab;
           renderAll();
@@ -445,6 +462,7 @@ function printOne(jenis, nama){
       }
     }, 120);
   }catch(e){
+    mobileRotOff();
     delete document.body.dataset.printone;
     ui.tab=prevTab;
     renderAll();
@@ -560,7 +578,8 @@ function teacherGridHTML(cfg, grid, tname){
   html+=`</tbody></table>`;
   const extra=(cfg.perdanaExtra||{})[tname]||[];
   const extraHtml = extra.length?`<div class="tamat">Luar grid PPKI (perdana): ${extra.map(esc).join(' · ')}</div>`:'';
-  return `<div class="gridblock"><h3><span class="dot" style="background:${teacherColor(tname)}"></span> ${esc(tname).toUpperCase()} <span class="tahap">— ${total} waktu PPKI + 1 perhimpunan = ${total+1}</span></h3>${html}${extraHtml}</div>`;
+  const bebanInfo = ui.admin ? ` <span class="tahap">— ${total} waktu PPKI + 1 perhimpunan = ${total+1}</span>` : '';
+  return `<div class="gridblock"><h3><span class="dot" style="background:${teacherColor(tname)}"></span> ${esc(tname).toUpperCase()}${bebanInfo}</h3>${html}${extraHtml}</div>`;
 }
 
 function loadTableHTML(cfg, grid){
@@ -798,8 +817,8 @@ function renderAll(){
   if(ui.tab==='kelas'){
     main.innerHTML = cfg.classes.map(c=>classGridHTML(cfg,grid,c.name,false)).join('');
   } else if(ui.tab==='guru'){
-    main.innerHTML = `<div class="gridblock"><h3>RINGKASAN BEBAN GURU</h3>${loadTableHTML(cfg,grid)}</div>` +
-      cfg.teachers.map(t=>teacherGridHTML(cfg,grid,t.name)).join('');
+    const ringkasan = ui.admin ? `<div class="gridblock"><h3>RINGKASAN BEBAN GURU</h3>${loadTableHTML(cfg,grid)}</div>` : '';
+    main.innerHTML = ringkasan + cfg.teachers.map(t=>teacherGridHTML(cfg,grid,t.name)).join('');
   } else if(ui.tab==='editor'){
     const list = issues.length? `<div class="issuebox"><b>Isu (${issues.length}):</b><ul>${issues.slice(0,25).map(i=>`<li>${esc(i.msg)}</li>`).join('')}${issues.length>25?'<li>…</li>':''}</ul></div>`
       : `<div class="issuebox ok">Tiada isu — jadual sah. ✓</div>`;
