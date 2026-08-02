@@ -439,6 +439,33 @@ async function publishGlobal(){
   }
 }
 
+// ---------- Cetak satu kelas / satu guru ----------
+function printOne(jenis, nama){
+  const cfg=state.config, grid=state.grid;
+  const main=document.getElementById('main');
+  const prevTab=ui.tab;
+  try{
+    main.innerHTML = jenis==='guru' ? teacherGridHTML(cfg, grid, nama) : classGridHTML(cfg, grid, nama, false);
+    document.body.dataset.tab = jenis==='guru' ? 'guru' : 'kelas';
+    document.body.dataset.printone = '1';
+    setTimeout(()=>{
+      try{ window.print(); }
+      catch(err){ toast('Cetakan disekat dalam panel ini — buka laman web/fail HTML untuk mencetak.', true); }
+      finally{
+        setTimeout(()=>{
+          delete document.body.dataset.printone;
+          ui.tab=prevTab;
+          renderAll();
+        }, 250);
+      }
+    }, 120);
+  }catch(e){
+    delete document.body.dataset.printone;
+    ui.tab=prevTab;
+    renderAll();
+  }
+}
+
 // ---------- Paparan ----------
 function toast(msg, isErr){
   const t=document.getElementById('toast');
@@ -1092,7 +1119,28 @@ document.addEventListener('click', e=>{
     publishGlobal();
     return;
   }
-  else if(act==='cetak'){ try{ window.print(); }catch(err){ toast('Cetakan disekat dalam panel ini — buka fail HTML dalam pelayar untuk mencetak.',true);} return; }
+  else if(act==='cetak'){
+    const kChips=cfg.classes.map(c=>`<button class="ddbtn" data-act="cetak-satu" data-t="kelas" data-v="${esc(c.name)}">${esc(c.name)}</button>`).join(' ');
+    const gChips=cfg.teachers.map(g=>`<button class="ddbtn" data-act="cetak-satu" data-t="guru" data-v="${esc(g.name)}"><span class="dot" style="background:${g.color}"></span> ${esc(g.name)}</button>`).join(' ');
+    openModal(`<h4>🖨 Cetak</h4>
+      <p style="font-size:13px;margin:6px 0"><button class="ddbtn" data-act="cetak-now" style="font-weight:700">Cetak paparan semasa (${ui.tab==='guru'?'semua guru':ui.tab==='kelas'?'semua kelas':'tab semasa'})</button></p>
+      <p style="font-size:12.5px;margin:10px 0 4px"><b>Atau cetak satu kelas sahaja:</b></p>
+      <div>${kChips}</div>
+      <p style="font-size:12.5px;margin:10px 0 4px"><b>Atau cetak satu guru sahaja:</b></p>
+      <div>${gChips}</div>
+      <div class="modal-foot"><button class="act" data-act="modal-close">Tutup</button></div>`);
+    return;
+  }
+  else if(act==='cetak-now'){
+    closeModal();
+    setTimeout(()=>{ try{ window.print(); }catch(err){ toast('Cetakan disekat dalam panel ini — buka laman web/fail HTML untuk mencetak.',true);} }, 120);
+    return;
+  }
+  else if(act==='cetak-satu'){
+    closeModal();
+    printOne(t.dataset.t, t.dataset.v);
+    return;
+  }
   else if(act==='eksport'){
     openModal(`<h4>Eksport / Simpan</h4>
       <p style="font-size:12.5px">Salin teks di bawah dan simpan dalam fail (cth: Notepad → jadual_ppki.json), atau cuba muat turun terus.</p>
