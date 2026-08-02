@@ -536,7 +536,7 @@ function tetapanHTML(cfg){
   const teacherRows = cfg.teachers.map((t,i)=>`
     <tr>
       <td><input data-act="t-name" data-i="${i}" value="${esc(t.name)}"></td>
-      <td><input type="color" data-act="t-color" data-i="${i}" value="${esc(t.color)}"></td>
+      <td><input type="color" data-act="t-color" data-i="${i}" value="${esc(t.color)}"> <input class="w80 hexin" data-act="t-colorhex" data-i="${i}" value="${esc(t.color)}" maxlength="7" spellcheck="false" placeholder="#AABBCC" title="Tampal kod warna hex di sini"></td>
       <td><button class="sm danger" data-act="t-del" data-i="${i}">Buang</button></td>
     </tr>`).join('');
 
@@ -692,6 +692,12 @@ document.addEventListener('change', e=>{
     if(cfg.perdanaExtra&&cfg.perdanaExtra[old]){cfg.perdanaExtra[nw]=cfg.perdanaExtra[old];delete cfg.perdanaExtra[old];}
   }
   else if(act==='t-color') cfg.teachers[+t.dataset.i].color=t.value;
+  else if(act==='t-colorhex'){
+    let v=t.value.trim();
+    if(v && v[0]!=='#') v='#'+v;
+    if(/^#[0-9a-fA-F]{6}$/.test(v)) cfg.teachers[+t.dataset.i].color=v.toUpperCase();
+    else { toast('Kod warna tidak sah — guna format #RRGGBB, cth: #AFD8F5', true); }
+  }
   else if(act==='s-name') cfg.curriculum[cfg.classes[+t.dataset.c].name][+t.dataset.i].name=t.value;
   else if(act==='s-code'){
     const cname=cfg.classes[+t.dataset.c].name, i=+t.dataset.i;

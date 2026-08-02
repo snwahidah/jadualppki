@@ -130,7 +130,8 @@
   .settings label{display:inline-block;margin:4px 10px 4px 0;font-size:12.5px}
   .settings input,.settings select{font-size:12.5px;padding:4px 8px;border:1px solid rgba(180,186,196,.8);border-radius:8px;background:rgba(255,255,255,.8);transition:box-shadow .2s}
   .settings input:focus{outline:none;box-shadow:0 0 0 3px rgba(59,130,246,.25)}
-  .settings input[type=color]{padding:0;width:40px;height:26px}
+  .settings input[type=color]{padding:0;width:40px;height:26px;vertical-align:middle;cursor:pointer}
+  .hexin{font-family:Consolas,Menlo,monospace;letter-spacing:1px;text-transform:uppercase;vertical-align:middle}
   .wide{width:340px}.w120{width:120px}.w80{width:80px}.w60{width:58px}.w40{width:44px}
   .sm{font-size:11.5px;padding:4px 11px;border-radius:999px;border:1px solid rgba(180,186,196,.8);background:rgba(255,255,255,.7);cursor:pointer;transition:all .2s var(--ease)}
   .sm:hover{transform:translateY(-1px);background:#fff}
@@ -840,7 +841,7 @@ function tetapanHTML(cfg){
   const teacherRows = cfg.teachers.map((t,i)=>`
     <tr>
       <td><input data-act="t-name" data-i="${i}" value="${esc(t.name)}"></td>
-      <td><input type="color" data-act="t-color" data-i="${i}" value="${esc(t.color)}"></td>
+      <td><input type="color" data-act="t-color" data-i="${i}" value="${esc(t.color)}"> <input class="w80 hexin" data-act="t-colorhex" data-i="${i}" value="${esc(t.color)}" maxlength="7" spellcheck="false" placeholder="#AABBCC" title="Tampal kod warna hex di sini"></td>
       <td><button class="sm danger" data-act="t-del" data-i="${i}">Buang</button></td>
     </tr>`).join('');
 
@@ -996,6 +997,12 @@ document.addEventListener('change', e=>{
     if(cfg.perdanaExtra&&cfg.perdanaExtra[old]){cfg.perdanaExtra[nw]=cfg.perdanaExtra[old];delete cfg.perdanaExtra[old];}
   }
   else if(act==='t-color') cfg.teachers[+t.dataset.i].color=t.value;
+  else if(act==='t-colorhex'){
+    let v=t.value.trim();
+    if(v && v[0]!=='#') v='#'+v;
+    if(/^#[0-9a-fA-F]{6}$/.test(v)) cfg.teachers[+t.dataset.i].color=v.toUpperCase();
+    else { toast('Kod warna tidak sah — guna format #RRGGBB, cth: #AFD8F5', true); }
+  }
   else if(act==='s-name') cfg.curriculum[cfg.classes[+t.dataset.c].name][+t.dataset.i].name=t.value;
   else if(act==='s-code'){
     const cname=cfg.classes[+t.dataset.c].name, i=+t.dataset.i;
