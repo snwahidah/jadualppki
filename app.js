@@ -29,7 +29,19 @@ applyLocalColors();
 // kemudian tema.json (warna), kemudian pilihan warna peranti ini.
 (async function loadRemote(){
   let changed=false;
+  // 1. API pangkalan data (Vercel + Redis) — terpantas & serta-merta
   try{
+    const r=await fetch('/api/data?v='+Date.now(), {cache:'no-store'});
+    const isJson=(r.headers.get('content-type')||'').includes('json');
+    if(r.ok && isJson){
+      const s=await r.json();
+      if(s && s.config && s.grid){ state=s; changed=true; ui.apiOk=true; }
+    } else if(r.status===404 && isJson){
+      ui.apiOk=true; // API wujud tapi belum ada data — boleh terbit kali pertama
+    }
+  }catch(e){/* bukan di Vercel — abaikan */}
+  // 2. Fallback: data.json statik (GitHub Pages / repo)
+  if(!changed) try{
     const r=await fetch('data.json?v='+Date.now(), {cache:'no-store'});
     if(r.ok){
       const s=await r.json();
@@ -356,6 +368,35 @@ async function ghPut(tok, path, payloadStr, msg){
 
 async function publishGlobal(){
   const cfg=state.config;
+  // Laluan pantas: API pangkalan data (Vercel + Redis) — serta-merta, guna PIN
+  if(ui.apiOk){
+    const pinI=document.getElementById('pub-pin');
+    const pin=pinI?pinI.value.trim():'';
+    if(!pin){ toast('Sila masukkan PIN admin.', true); return; }
+    const status=document.getElementById('jana-status');
+    if(status) status.textContent='Menerbitkan ke pangkalan data...';
+    try{
+      const r=await fetch('/api/data', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({pin, state:{config:state.config, grid:state.grid}})});
+      if(r.ok){
+        closeModal();
+        toast('🌐 Diterbitkan SERTA-MERTA! Semua pengguna mendapat versi terkini sekarang (muat semula halaman mereka).');
+      } else if(r.status===401){
+        if(pinI){pinI.value='';pinI.focus();}
+        toast('PIN salah.', true);
+      } else if(r.status===503){
+        toast('Pangkalan data belum dikonfigurasi di Vercel (Storage → Upstash Redis).', true);
+      } else {
+        const j=await r.json().catch(()=>({}));
+        toast('Gagal terbit: '+(j.error||('HTTP '+r.status)), true);
+      }
+    }catch(e){
+      toast('Tidak dapat hubungi pelayan — semak sambungan internet.', true);
+    } finally {
+      if(status) status.textContent='';
+    }
+    return;
+  }
   const repo=cfg.repo||{owner:'snwahidah',name:'jadualppki'};
   const inp=document.getElementById('gh-tok');
   const tok=inp?inp.value.trim():'';
@@ -1019,10 +1060,18 @@ document.addEventListener('click', e=>{
     return;
   }
   else if(act==='save-colors-global'){
+    if(ui.apiOk){
+      openModal(`<h4>🌐 Terbit — pangkalan data</h4>
+        <p style="font-size:12.5px">Keseluruhan keadaan semasa (<b>jadual, tetapan, kekangan & warna</b>) akan disimpan ke pangkalan data dan tersebar <b>serta-merta</b> kepada semua pengguna. Masukkan PIN admin untuk sahkan.</p>
+        <input id="pub-pin" class="pinin" type="password" inputmode="numeric" maxlength="12" placeholder="••••••" autocomplete="off">
+        <div class="modal-foot"><button class="act primary" data-act="global-colors-go">🌐 Terbit sekarang</button> <button class="act" data-act="modal-close">Batal</button></div>`);
+      setTimeout(()=>{const i=document.getElementById('pub-pin'); if(i) i.focus();}, 60);
+      return;
+    }
     let tok='';
     try{ tok=localStorage.getItem(GHTOK_KEY)||''; }catch(e){}
     openModal(`<h4>🌐 Terbit ke laman — untuk semua pengguna</h4>
-      <p style="font-size:12.5px">Keseluruhan keadaan semasa (<b>jadual, tetapan, kekangan & warna</b>) akan diterbitkan ke laman web, dan semua pengguna mendapat versi terkini dalam 1–2 minit. Perlukan token GitHub anda (kekal dalam pelayar ini sahaja, tidak dikongsi; jika luput, tampal token baharu di sini).</p>
+      <p style="font-size:12.5px">Keseluruhan keadaan semasa (<b>jadual, tetapan, kekangan & warna</b>) akan diterbitkan ke laman web, dan semua pengguna mendapat versi terkini sebentar lagi. Perlukan token GitHub anda (kekal dalam pelayar ini sahaja, tidak dikongsi; jika luput, tampal token baharu di sini).</p>
       <input id="gh-tok" class="jsonta" style="height:auto;padding:8px;font-size:12px" type="password" placeholder="github_pat_..." value="${esc(tok)}">
       <div class="modal-foot"><button class="act primary" data-act="global-colors-go">🌐 Terbit sekarang</button> <button class="act" data-act="modal-close">Batal</button></div>`);
     return;
@@ -1051,9 +1100,14 @@ document.addEventListener('click', e=>{
 });
 
 document.addEventListener('keydown', e=>{
-  if(e.key==='Enter' && !document.getElementById('modal').hidden && document.getElementById('pin-in')){
+  if(e.key!=='Enter' || document.getElementById('modal').hidden) return;
+  if(document.getElementById('pin-in')){
     e.preventDefault();
     const b=document.querySelector('[data-act="pin-ok"]');
+    if(b) b.click();
+  } else if(document.getElementById('pub-pin')){
+    e.preventDefault();
+    const b=document.querySelector('[data-act="global-colors-go"]');
     if(b) b.click();
   }
 });
