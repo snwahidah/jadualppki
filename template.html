@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistem Jadual Waktu PPKI — SK Taman Gembira</title>
+<style>
+  :root{ --ink:#1a1a2e; --line:#2b2b40; --soft:#666; --bg:#f4f5f7; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  .wrap{max-width:1220px;margin:0 auto;padding:14px 18px 60px}
+  header{text-align:center;margin-bottom:10px}
+  header h1{margin:0;font-size:20px;letter-spacing:.5px}
+  header .sub{color:var(--soft);font-size:13px;margin-top:2px}
+  header .title2{font-weight:700;font-size:15px;margin-top:6px;letter-spacing:1px}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:10px 0 14px}
+  .tabbtn,.act{border:1px solid #c9cdd4;background:#fff;padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer}
+  .tabbtn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .act.primary{background:#0b6e4f;color:#fff;border-color:#0b6e4f;font-weight:600}
+  .act:hover,.tabbtn:hover{filter:brightness(.96)}
+  .pill{padding:6px 12px;border-radius:20px;font-size:12.5px;font-weight:600}
+  .pill.ok{background:#d9f2e4;color:#0b6e4f}
+  .pill.err{background:#fde3e0;color:#c0392b}
+  #jana-status{font-size:12.5px;color:var(--soft)}
+
+  .gridblock{background:#fff;border:1px solid #dfe2e8;border-radius:10px;padding:14px 16px;margin-bottom:18px;overflow-x:auto}
+  .gridblock h3{margin:0 0 4px;font-size:15px;letter-spacing:.5px}
+  .tahap{color:var(--soft);font-weight:500;font-size:12.5px}
+  .tamat{color:var(--soft);font-size:11.5px;margin-bottom:8px}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid #0003;vertical-align:-1px;margin-right:2px}
+
+  table.jadual{border-collapse:collapse;width:100%;min-width:860px}
+  .jadual th,.jadual td{border:1px solid var(--line);text-align:center;padding:2px}
+  .jadual thead th{background:#eef0f4;font-size:12px;padding:4px 2px}
+  .pnum{font-weight:700;font-size:13px}
+  .ptime{font-size:9.5px;color:var(--soft);font-weight:400}
+  .daycol{width:86px;font-weight:700;font-size:12px;background:#eef0f4}
+  .jadual td{height:44px;font-size:12px}
+  .rehat-col,.rehat-cell{background:#c9cdd4 !important;width:20px;font-size:9px;line-height:1.15;font-weight:700;color:#333}
+  .scode{font-weight:700;font-size:13px}
+  .tname{font-size:9.5px;line-height:1.1}
+  .nosession{background:repeating-linear-gradient(45deg,#f2f2f2,#f2f2f2 5px,#e4e4e4 5px,#e4e4e4 10px)}
+  .perhim{background:#f5f0dc;font-size:9px;letter-spacing:.5px;font-weight:700}
+  .perdana{background:#4a4a58;color:#fff;font-size:8.8px;line-height:1.15;padding:1px}
+  .freecell{background:#fff}
+  td.bad{box-shadow:inset 0 0 0 3px #e74c3c}
+
+  .editcell select{width:100%;border:none;background:transparent;font-weight:700;font-size:13px;text-align:center;cursor:pointer}
+  .editcell .tname{pointer-events:none}
+  .chips{margin-top:8px}
+  .chip{display:inline-block;border-radius:12px;padding:2px 9px;font-size:11.5px;margin:2px;border:1.5px solid}
+  .chip.ok{border-color:#0b6e4f;color:#0b6e4f;background:#eafaf2}
+  .chip.notok{border-color:#c0392b;color:#c0392b;background:#fdeeec;font-weight:700}
+  .issuebox{background:#fdeeec;border:1px solid #f3b6ae;border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:13px}
+  .issuebox.ok{background:#eafaf2;border-color:#a8dcc4;color:#0b6e4f;font-weight:600}
+  .issuebox ul{margin:6px 0 0;padding-left:20px}
+
+  table.mini{border-collapse:collapse;font-size:12.5px;margin:6px 0}
+  .mini th,.mini td{border:1px solid #c9cdd4;padding:4px 8px;text-align:center}
+  .mini thead th{background:#eef0f4}
+
+  .settings fieldset{background:#fff;border:1px solid #dfe2e8;border-radius:10px;margin-bottom:14px;padding:10px 16px}
+  .settings legend{font-weight:700;font-size:13.5px;padding:0 6px}
+  .settings label{display:inline-block;margin:4px 10px 4px 0;font-size:12.5px}
+  .settings input,.settings select{font-size:12.5px;padding:3px 6px;border:1px solid #c9cdd4;border-radius:6px}
+  .settings input[type=color]{padding:0;width:40px;height:26px}
+  .wide{width:340px}.w120{width:120px}.w80{width:80px}.w60{width:58px}.w40{width:44px}
+  .sm{font-size:11.5px;padding:3px 9px;border-radius:6px;border:1px solid #c9cdd4;background:#fff;cursor:pointer}
+  .sm.danger{color:#c0392b;border-color:#e8b3ac}
+  .hint{font-size:11.5px;color:var(--soft);margin-top:6px}
+  .hint.big{font-size:13px;background:#fff8dc;border:1px solid #e8d88a;border-radius:8px;padding:10px 14px;color:#5a4d00}
+  .tamat-edit{font-size:12px;margin-bottom:6px}
+  .unav td.uv{cursor:pointer;width:52px;height:26px}
+  .unav td.uv.on{background:#c0392b;color:#fff;font-weight:700}
+  .panduan{background:#fff;border:1px solid #dfe2e8;border-radius:10px;padding:8px 22px;font-size:13.5px;line-height:1.55}
+
+  .toast{position:fixed;left:50%;bottom:-120px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;transition:bottom .3s;z-index:120;max-width:80%}
+  .toast.show{bottom:24px}
+  .toast.err{background:#c0392b}
+
+  #modal{position:fixed;inset:0;background:#0007;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+  #modal[hidden]{display:none}
+  .modal-box{background:#fff;border-radius:12px;padding:16px 20px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 12px 40px #0005}
+  .modal-box h4{margin:0 0 10px;font-size:14.5px}
+  .optlist{display:flex;flex-direction:column;gap:6px}
+  .optbtn{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:1px solid #d6dae1;background:#fff;border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer}
+  .optbtn:hover{background:#f0f4f8}
+  .optbtn.cur{outline:2px solid var(--ink)}
+  .optbtn small{color:var(--soft)}
+  .optcode{display:inline-block;min-width:46px;text-align:center;font-weight:700;border-radius:6px;padding:4px 6px;border:1px solid #0002}
+  .modal-foot{margin-top:12px;text-align:right}
+  .act.danger2{background:#c0392b;color:#fff;border-color:#c0392b}
+  .jsonta{width:100%;height:180px;font-family:monospace;font-size:11px;border:1px solid #c9cdd4;border-radius:8px;padding:8px}
+  .ddbtn{border:1px solid #c9cdd4;background:#fff;border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
+  .ddbtn:hover{background:#f0f4f8}
+  .ddbtn.sel{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .editcell{cursor:pointer}
+  .editcell:hover{filter:brightness(.92)}
+
+  @media print{
+    @page{size:A4 landscape;margin:8mm}
+    body{background:#fff}
+    .toolbar,.toast,.issuebox,.chips,.hint{display:none !important}
+    .wrap{max-width:none;padding:0}
+    .gridblock{border:none;padding:4px 0;margin:0 0 8px;overflow:visible;page-break-inside:avoid;break-inside:avoid}
+    body[data-tab="guru"] .gridblock,body[data-tab="kelas"] .gridblock{page-break-after:always}
+    body[data-tab="kelas"] .gridblock:last-child,body[data-tab="guru"] .gridblock:last-child{page-break-after:auto}
+    table.jadual{min-width:0}
+    .editcell select{appearance:none;-webkit-appearance:none}
+  }
+</style>
+</head>
+<body data-tab="kelas">
+<div class="wrap">
+  <header>
+    <h1 id="hdr-school">—</h1>
+    <div class="sub" id="hdr-sub">—</div>
+    <div class="title2">JADUAL WAKTU PROGRAM PENDIDIKAN KHAS INTEGRASI</div>
+  </header>
+  <div class="toolbar">
+    <button class="tabbtn" data-tab="kelas">Jadual Kelas</button>
+    <button class="tabbtn" data-tab="guru">Jadual Guru</button>
+    <button class="tabbtn" data-tab="editor">Editor</button>
+    <button class="tabbtn" data-tab="tetapan">Tetapan</button>
+    <button class="tabbtn" data-tab="panduan">Panduan</button>
+    <span style="width:10px"></span>
+    <button class="act primary" data-act="jana">⚡ Jana Jadual</button>
+    <button class="act" data-act="cetak">🖨 Cetak</button>
+    <button class="act" data-act="eksport">⬇ Eksport JSON</button>
+    <button class="act" data-act="import">⬆ Import JSON</button>
+    <span id="status-pill" class="pill ok">…</span>
+    <span id="jana-status"></span>
+  </div>
+  <div id="main"></div>
+</div>
+<div id="toast" class="toast"></div>
+<div id="modal" hidden><div class="modal-box" id="modal-box"></div></div>
+<input type="file" id="importfile" accept=".json,application/json" hidden>
+<script>
+window.DEFAULT_STATE = /*__STATE__*/null;
+</script>
+<script>
+/*__APP__*/
+</script>
+</body>
+</html>
