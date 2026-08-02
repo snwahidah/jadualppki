@@ -319,10 +319,11 @@ function openModal(html){
 }
 function closeModal(){ document.getElementById('modal').hidden=true; }
 
-function periodHeaderCells(cfg){
+function periodHeaderCells(cfg, plist){
+  const list = plist || cfg.periods;
   let h='';
-  for(let p=0;p<cfg.periods.length;p++){
-    h+=`<th class="pcol"><div class="pnum">${p+1}</div><div class="ptime">${cfg.periods[p].start}<br>–${cfg.periods[p].end}</div></th>`;
+  for(let p=0;p<list.length;p++){
+    h+=`<th class="pcol"><div class="pnum">${p+1}</div><div class="ptime">${list[p].start}<br>–${list[p].end}</div></th>`;
     if(p===cfg.rehatAfter) h+=`<th class="rehat-col" title="${esc(cfg.rehatLabel)}">R<br>E<br>H<br>A<br>T</th>`;
   }
   return h;
@@ -368,11 +369,19 @@ function teacherGridHTML(cfg, grid, tname){
   const notes=(cfg.perdanaNotes||{})[tname]||[];
   const noteMap={};
   for(const [d,ps,pe,label] of notes) for(let p=ps;p<=pe;p++) noteMap[d+'|'+p]=label;
+  // panjangkan grid jika guru ada komitmen perdana melepasi grid PPKI (cth: hingga 12.50)
+  const hasExtra = notes.some(n=>n[2]>=D.NP);
+  const plist = hasExtra ? cfg.periods.concat(cfg.extraPeriods||[]) : cfg.periods;
   let total=0;
-  let html=`<table class="jadual"><thead><tr><th class="daycol">HARI / MASA</th>${periodHeaderCells(cfg)}</tr></thead><tbody>`;
+  let html=`<table class="jadual"><thead><tr><th class="daycol">HARI / MASA</th>${periodHeaderCells(cfg, plist)}</tr></thead><tbody>`;
   for(let d=0;d<cfg.days.length;d++){
     html+=`<tr><td class="daycol">${esc(cfg.days[d].toUpperCase())}</td>`;
-    for(let p=0;p<D.NP;p++){
+    for(let p=0;p<plist.length;p++){
+      if(p>=D.NP){
+        const label=noteMap[d+'|'+p];
+        html+= label ? `<td class="perdana"><div>${esc(label)}</div></td>` : `<td class="freecell"></td>`;
+        continue;
+      }
       let cell=null;
       for(const c of D.classNames){
         const v=grid[c]&&grid[c][d]?grid[c][d][p]:null;
@@ -480,6 +489,13 @@ function senaraiHTML(cfg, grid){
         } else if(D.unav[mode.name]&&D.unav[mode.name][d][p]){
           rows+=`<div class="lrow lperdana"><span class="ltime">${time}</span><span class="lchip" style="background:#4a4a58;color:#fff">P</span><span class="lmain">${esc(noteMap[d+'|'+p]||'Tugas perdana')}</span></div>`;
         }
+      }
+    }
+    if(mode.type==='guru'){
+      const extras=cfg.extraPeriods||[];
+      for(let e2=0;e2<extras.length;e2++){
+        const pe=D.NP+e2;
+        if(noteMap[d+'|'+pe]) rows+=`<div class="lrow lperdana"><span class="ltime">${esc(extras[e2].start)}–${esc(extras[e2].end)}</span><span class="lchip" style="background:#4a4a58;color:#fff">P</span><span class="lmain">${esc(noteMap[d+'|'+pe])}</span></div>`;
       }
     }
     const extra = mode.type==='guru' ? ((cfg.perdanaExtra||{})[mode.name]||[]).filter(x=>x.startsWith(cfg.days[d])) : [];
