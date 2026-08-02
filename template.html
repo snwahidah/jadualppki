@@ -208,6 +208,13 @@
     .blob{filter:blur(52px)}
   }
 
+  /* Mod admin */
+  .adminonly{display:none !important}
+  body[data-admin="1"] .adminonly{display:inline-block !important}
+  #admin-btn.on{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none}
+  .pinin{width:100%;font-size:22px;text-align:center;letter-spacing:8px;padding:10px;border:1px solid rgba(180,186,196,.9);border-radius:12px;background:rgba(255,255,255,.9)}
+  .pinin:focus{outline:none;box-shadow:0 0 0 3px rgba(124,58,237,.3)}
+
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation:none !important;transition:none !important}
   }
@@ -239,14 +246,15 @@
     <button class="tabbtn" data-tab="senarai">📱 Senarai</button>
     <button class="tabbtn" data-tab="kelas">Jadual Kelas</button>
     <button class="tabbtn" data-tab="guru">Jadual Guru</button>
-    <button class="tabbtn" data-tab="editor">Editor</button>
-    <button class="tabbtn" data-tab="tetapan">Tetapan</button>
-    <button class="tabbtn" data-tab="panduan">Panduan</button>
+    <button class="tabbtn adminonly" data-tab="editor">Editor</button>
+    <button class="tabbtn adminonly" data-tab="tetapan">Tetapan</button>
+    <button class="tabbtn adminonly" data-tab="panduan">Panduan</button>
     <span style="width:6px"></span>
-    <button class="act primary" data-act="jana">⚡ Jana Jadual</button>
+    <button class="act primary adminonly" data-act="jana">⚡ Jana Jadual</button>
     <button class="act" data-act="cetak">🖨 Cetak</button>
-    <button class="act" data-act="eksport">⬇ Eksport</button>
-    <button class="act" data-act="import">⬆ Import</button>
+    <button class="act adminonly" data-act="eksport">⬇ Eksport</button>
+    <button class="act adminonly" data-act="import">⬆ Import</button>
+    <button class="act" data-act="admin-toggle" id="admin-btn">🔒 Admin</button>
     <span id="status-pill" class="pill ok">…</span>
     <span id="jana-status"></span>
   </div>

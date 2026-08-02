@@ -15,7 +15,16 @@ function deepCopy(o){return JSON.parse(JSON.stringify(o));}
 
 // ---------- Keadaan ----------
 let state = deepCopy(window.DEFAULT_STATE);
-const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false };
+const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false, admin:false };
+const ADMIN_TABS = ['editor','tetapan','panduan'];
+function adminPin(){ return String(state.config.adminPin || '191989'); }
+function openPinModal(action, title){
+  ui.pinAction = action;
+  openModal(`<h4>🔒 ${esc(title||'Masukkan PIN admin')}</h4>
+    <input id="pin-in" class="pinin" type="password" inputmode="numeric" maxlength="12" placeholder="••••••" autocomplete="off">
+    <div class="modal-foot"><button class="act primary" data-act="pin-ok">Sahkan</button> <button class="act" data-act="modal-close">Batal</button></div>`);
+  setTimeout(()=>{const i=document.getElementById('pin-in'); if(i) i.focus();}, 60);
+}
 
 // ---------- Derivasi konfigurasi ----------
 function derived(cfg){
@@ -603,6 +612,7 @@ function tetapanHTML(cfg){
 const PANDUAN = `
 <div class="panduan">
 <h3>Cara guna sistem ini</h3>
+<p><b>Mod admin.</b> Pengguna biasa hanya melihat tab <i>Senarai</i>, <i>Jadual Kelas</i> dan <i>Jadual Guru</i> (serta butang Cetak). Klik <b>🔒 Admin</b> dan masukkan PIN untuk membuka Editor, Tetapan, Jana Jadual dan Eksport/Import. Butang ⚡ Jana Jadual juga meminta PIN setiap kali sebagai perlindungan daripada jana secara tidak sengaja. Klik 🔓 Admin sekali lagi untuk kembali ke mod biasa. (PIN boleh ditukar melalui medan <code>adminPin</code> dalam fail Eksport JSON.)</p>
 <p><b>Melihat & mencetak.</b> Tab <i>Jadual Kelas</i> dan <i>Jadual Guru</i> memaparkan jadual semasa. Tekan <b>Cetak</b> untuk cetak tab yang sedang dibuka (sesuai untuk cetakan rasmi, orientasi landskap automatik).</p>
 <p><b>Telefon mudah alih.</b> Tab <i>📱 Senarai</i> direka untuk skrin kecil — pilih guru atau kelas dan jadual dipaparkan hari demi hari dalam bentuk senarai (dibuka secara automatik pada telefon). Jadual penuh juga boleh dileret ke kiri/kanan; lajur hari kekal kelihatan.</p>
 <p><b>Mengubah secara manual.</b> Di tab <i>Editor</i>, klik mana-mana sel — menu pilihan subjek akan terbuka. Sistem akan menanda <span style="color:#c0392b"><b>merah</b></span> secara automatik jika ada pertindihan guru, guru digunakan semasa slot perdana, kuota subjek tidak cukup, atau subjek berulang melebihi 2 waktu sehari. Senarai isu dipaparkan di bahagian atas.</p>
@@ -627,6 +637,12 @@ function renderAll(){
 
   document.getElementById('hdr-school').textContent=cfg.meta.school;
   document.getElementById('hdr-sub').textContent=`${cfg.meta.program} · ${cfg.meta.tahun}`;
+
+  // mod admin: hadkan tab untuk pengguna biasa
+  if(!ui.admin && ADMIN_TABS.includes(ui.tab)) ui.tab='kelas';
+  document.body.dataset.admin = ui.admin ? '1' : '0';
+  const ab=document.getElementById('admin-btn');
+  if(ab){ ab.textContent = ui.admin ? '🔓 Admin' : '🔒 Admin'; ab.classList.toggle('on', ui.admin); }
 
   const main=document.getElementById('main');
   document.body.dataset.tab=ui.tab;
@@ -857,7 +873,31 @@ document.addEventListener('click', e=>{
       <div class="modal-foot"><button class="act danger2" data-act="c-del-yes" data-name="${esc(name)}">Ya, buang</button> <button class="act" data-act="modal-close">Batal</button></div>`);
     return;
   }
-  else if(act==='jana'){ janaJadual(); return; }
+  else if(act==='admin-toggle'){
+    if(ui.admin){ ui.admin=false; toast('Mod admin dimatikan.'); renderAll(); }
+    else openPinModal('admin','Masukkan PIN admin');
+    return;
+  }
+  else if(act==='pin-ok'){
+    const inp=document.getElementById('pin-in');
+    const val=inp?inp.value.trim():'';
+    if(val===adminPin()){
+      const action=ui.pinAction;
+      ui.pinAction=null;
+      closeModal();
+      if(action==='admin'){ ui.admin=true; toast('Mod admin diaktifkan.'); renderAll(); }
+      else if(action==='jana'){ janaJadual(); }
+    } else {
+      if(inp){ inp.value=''; inp.focus(); }
+      toast('PIN salah.', true);
+    }
+    return;
+  }
+  else if(act==='jana'){
+    if(!ui.admin){ toast('Mod admin diperlukan.', true); return; }
+    openPinModal('jana','Masukkan PIN untuk jana jadual baharu');
+    return;
+  }
   else if(act==='cetak'){ try{ window.print(); }catch(err){ toast('Cetakan disekat dalam panel ini — buka fail HTML dalam pelayar untuk mencetak.',true);} return; }
   else if(act==='eksport'){
     openModal(`<h4>Eksport / Simpan</h4>
@@ -875,6 +915,14 @@ document.addEventListener('click', e=>{
   }
   else return;
   renderAll();
+});
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !document.getElementById('modal').hidden && document.getElementById('pin-in')){
+    e.preventDefault();
+    const b=document.querySelector('[data-act="pin-ok"]');
+    if(b) b.click();
+  }
 });
 
 document.getElementById('importfile').addEventListener('change', e=>{

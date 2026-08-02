@@ -19,6 +19,7 @@ const config = {
   assembly: {day:0, period:0},
   morningPeriods: [0,1,2],
   maxPerDay: 7,
+  adminPin: '191989',
   teachers: [
     {name:'Fazlina', color:'#AFD8F5'},
     {name:'Mukmin',  color:'#FAF0A8'},

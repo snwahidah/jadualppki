@@ -208,6 +208,13 @@
     .blob{filter:blur(52px)}
   }
 
+  /* Mod admin */
+  .adminonly{display:none !important}
+  body[data-admin="1"] .adminonly{display:inline-block !important}
+  #admin-btn.on{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none}
+  .pinin{width:100%;font-size:22px;text-align:center;letter-spacing:8px;padding:10px;border:1px solid rgba(180,186,196,.9);border-radius:12px;background:rgba(255,255,255,.9)}
+  .pinin:focus{outline:none;box-shadow:0 0 0 3px rgba(124,58,237,.3)}
+
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation:none !important;transition:none !important}
   }
@@ -239,14 +246,15 @@
     <button class="tabbtn" data-tab="senarai">📱 Senarai</button>
     <button class="tabbtn" data-tab="kelas">Jadual Kelas</button>
     <button class="tabbtn" data-tab="guru">Jadual Guru</button>
-    <button class="tabbtn" data-tab="editor">Editor</button>
-    <button class="tabbtn" data-tab="tetapan">Tetapan</button>
-    <button class="tabbtn" data-tab="panduan">Panduan</button>
+    <button class="tabbtn adminonly" data-tab="editor">Editor</button>
+    <button class="tabbtn adminonly" data-tab="tetapan">Tetapan</button>
+    <button class="tabbtn adminonly" data-tab="panduan">Panduan</button>
     <span style="width:6px"></span>
-    <button class="act primary" data-act="jana">⚡ Jana Jadual</button>
+    <button class="act primary adminonly" data-act="jana">⚡ Jana Jadual</button>
     <button class="act" data-act="cetak">🖨 Cetak</button>
-    <button class="act" data-act="eksport">⬇ Eksport</button>
-    <button class="act" data-act="import">⬆ Import</button>
+    <button class="act adminonly" data-act="eksport">⬇ Eksport</button>
+    <button class="act adminonly" data-act="import">⬆ Import</button>
+    <button class="act" data-act="admin-toggle" id="admin-btn">🔒 Admin</button>
     <span id="status-pill" class="pill ok">…</span>
     <span id="jana-status"></span>
   </div>
@@ -256,7 +264,7 @@
 <div id="modal" hidden><div class="modal-box" id="modal-box"></div></div>
 <input type="file" id="importfile" accept=".json,application/json" hidden>
 <script>
-window.DEFAULT_STATE = {"config":{"meta":{"school":"SEKOLAH KEBANGSAAN TAMAN GEMBIRA","program":"JALAN HILIR 2, TELOK GADONG, 41100 KLANG SELANGOR","tahun":"2026"},"days":["Isnin","Selasa","Rabu","Khamis","Jumaat"],"periods":[{"start":"7.30","end":"8.00"},{"start":"8.00","end":"8.30"},{"start":"8.30","end":"9.00"},{"start":"9.20","end":"9.50"},{"start":"9.50","end":"10.20"},{"start":"10.20","end":"10.50"},{"start":"10.50","end":"11.20"},{"start":"11.20","end":"11.50"},{"start":"11.50","end":"12.20"}],"extraPeriods":[{"start":"12.20","end":"12.50"}],"rehatAfter":2,"rehatLabel":"REHAT 9.00 – 9.20","assembly":{"day":0,"period":0},"morningPeriods":[0,1,2],"maxPerDay":7,"teachers":[{"name":"Fazlina","color":"#AFD8F5"},{"name":"Mukmin","color":"#FAF0A8"},{"name":"Auni","color":"#B5E6C8"},{"name":"Wahidah","color":"#F6B3B6"},{"name":"Hafizah","color":"#EFC9EA"}],"classes":[{"name":"1 KRISTAL","tahap":1,"periodsPerDay":[8,8,8,8,7]},{"name":"2 INTAN","tahap":1,"periodsPerDay":[8,8,8,8,7]},{"name":"4 BERLIAN","tahap":2,"periodsPerDay":[9,9,8,9,7]}],"curriculum":{"1 KRISTAL":[{"name":"Bahasa Melayu","code":"BM","teacher":"Fazlina","waktu":4,"morning":false},{"name":"Matematik","code":"MT","teacher":"Fazlina","waktu":3,"morning":false},{"name":"Bahasa Inggeris","code":"BI","teacher":"Fazlina","waktu":3,"morning":false},{"name":"Pengurusan Diri","code":"PD","teacher":"Auni","waktu":6,"morning":false},{"name":"Kemahiran Manipulatif","code":"KM","teacher":"Auni","waktu":6,"morning":false},{"name":"Pendidikan Islam","code":"PI","teacher":"Hafizah","waktu":5,"morning":false},{"name":"Pendidikan Jasmani","code":"PJ","teacher":"Fazlina","waktu":4,"morning":true,"pair":true,"noDays":[0]},{"name":"Pendidikan Seni","code":"PSV","teacher":"Auni","waktu":4,"morning":false},{"name":"Pendidikan Muzik","code":"MZ","teacher":"Auni","waktu":3,"morning":false}],"2 INTAN":[{"name":"Bahasa Melayu","code":"BM","teacher":"Wahidah","waktu":4,"morning":false},{"name":"Matematik","code":"MT","teacher":"Wahidah","waktu":3,"morning":false},{"name":"Bahasa Inggeris","code":"BI","teacher":"Wahidah","waktu":3,"morning":false},{"name":"Pengurusan Diri","code":"PD","teacher":"Wahidah","waktu":6,"morning":false},{"name":"Kemahiran Manipulatif","code":"KM","teacher":"Wahidah","waktu":6,"morning":false},{"name":"Pendidikan Islam","code":"PI","teacher":"Hafizah","waktu":5,"morning":false},{"name":"Pendidikan Jasmani","code":"PJ","teacher":"Mukmin","waktu":4,"morning":true,"pair":true,"noDays":[0]},{"name":"Pendidikan Seni","code":"PSV","teacher":"Auni","waktu":4,"morning":false},{"name":"Pendidikan Muzik","code":"MZ","teacher":"Auni","waktu":3,"morning":false}],"4 BERLIAN":[{"name":"Bahasa Melayu","code":"BM","teacher":"Mukmin","waktu":5,"morning":false},{"name":"Matematik","code":"MT","teacher":"Mukmin","waktu":4,"morning":false},{"name":"Bahasa Inggeris","code":"BI","teacher":"Mukmin","waktu":4,"morning":false},{"name":"Pengurusan Diri","code":"PD","teacher":"Auni","waktu":2,"morning":false},{"name":"Kemahiran Manipulatif","code":"KM","teacher":"Fazlina","waktu":3,"morning":false},{"name":"Pendidikan Islam","code":"PI","teacher":"Hafizah","waktu":5,"morning":false},{"name":"Pendidikan Jasmani Kesihatan","code":"PJK","teacher":"Mukmin","waktu":3,"morning":true,"noDays":[0]},{"name":"Pendidikan Seni","code":"PS","teacher":"Fazlina","waktu":2,"morning":false},{"name":"Pendidikan Muzik","code":"MZ","teacher":"Fazlina","waktu":2,"morning":false},{"name":"Pend. Teknologi Maklumat & Komunikasi","code":"TMK","teacher":"Mukmin","waktu":2,"morning":false},{"name":"Kemahiran Hidup Asas","code":"KH","teacher":"Fazlina","waktu":5,"morning":false},{"name":"Pend. Sains, Sosial & Alam Sekitar","code":"PSSAS","teacher":"Mukmin","waktu":4,"morning":false}]},"unavailable":{"Hafizah":[[0,3,4],[0,1,3,4,7,8],[3,4,5,6,7,8],[0,1,2,3,7,8],[0,1,6,7]]},"perdanaNotes":{"Hafizah":[[0,3,4,"PI 6 BES (9.00–10.00)"],[0,9,9,"PI 4 BIJAK (12.20–1.20)"],[1,0,1,"TASMIK 4 BES (7.30–8.30)"],[1,3,4,"PI 3 BIJAK (9.00–10.00)"],[1,7,8,"TASMIK 4 BIJ (11.20–12.20)"],[1,9,9,"PI 6 BES (12.20–1.20)"],[2,3,4,"TASMIK 4 BES (9.00–10.00)"],[2,5,6,"PI 4 BIJAK (10.20–11.20)"],[2,7,8,"TASMIK 1 BIJ (11.20–12.20)"],[3,0,1,"PI 6 BES (7.30–8.30)"],[3,2,3,"PI 4 BIJAK (8.30–9.30)"],[3,7,8,"PI 3 BIJAK (11.20–12.20)"],[4,0,1,"TASMIK 2 BIJ (7.30–8.30)"],[4,6,7,"PI 3 BIJAK (10.50–11.50)"]]},"perdanaExtra":{"Hafizah":["Isnin 12.50–1.20: PI 4 BIJAK (sambungan)","Selasa 12.50–1.20: PI 6 BES (sambungan)"]}},"grid":{"1 KRISTAL":[["PERHIM","PSV","PSV","PD","PD","BM","PI","PI",null],["BM","MT","MT","KM","KM","PSV","PSV","PD",null],["MZ","MZ","PI","PD","BI","KM","KM","BM",null],["MZ","PJ","PJ","PD","PD","BM","BI","BI",null],["PJ","PJ","MT","PI","PI","KM","KM",null,null]],"2 INTAN":[["PERHIM","PD","PI","KM","BM","BM","BI","BI",null],["PSV","PSV","KM","PD","MT","MT","PI","BM",null],["PI","PI","MZ","BM","KM","KM","PD","PD",null],["PJ","PJ","PSV","PD","PI","MT","MZ","MZ",null],["BI","PJ","PJ","PD","PSV","KM","KM",null,null]],"4 BERLIAN":[["PERHIM","PI","PS","MZ","MZ","PSSAS","PSSAS","KM","KM"],["PJK","PJK","BM","MT","MT","PI","KH","KH","PSSAS"],["BM","BM","PS","KH","BI","BI","MT","MT",null],["KM","PD","PSSAS","BI","BI","PI","PI","TMK","TMK"],["PJK","PD","PI","KH","KH","BM","BM",null,null]]}};
+window.DEFAULT_STATE = {"config":{"meta":{"school":"SEKOLAH KEBANGSAAN TAMAN GEMBIRA","program":"JALAN HILIR 2, TELOK GADONG, 41100 KLANG SELANGOR","tahun":"2026"},"days":["Isnin","Selasa","Rabu","Khamis","Jumaat"],"periods":[{"start":"7.30","end":"8.00"},{"start":"8.00","end":"8.30"},{"start":"8.30","end":"9.00"},{"start":"9.20","end":"9.50"},{"start":"9.50","end":"10.20"},{"start":"10.20","end":"10.50"},{"start":"10.50","end":"11.20"},{"start":"11.20","end":"11.50"},{"start":"11.50","end":"12.20"}],"extraPeriods":[{"start":"12.20","end":"12.50"}],"rehatAfter":2,"rehatLabel":"REHAT 9.00 – 9.20","assembly":{"day":0,"period":0},"morningPeriods":[0,1,2],"maxPerDay":7,"adminPin":"191989","teachers":[{"name":"Fazlina","color":"#AFD8F5"},{"name":"Mukmin","color":"#FAF0A8"},{"name":"Auni","color":"#B5E6C8"},{"name":"Wahidah","color":"#F6B3B6"},{"name":"Hafizah","color":"#EFC9EA"}],"classes":[{"name":"1 KRISTAL","tahap":1,"periodsPerDay":[8,8,8,8,7]},{"name":"2 INTAN","tahap":1,"periodsPerDay":[8,8,8,8,7]},{"name":"4 BERLIAN","tahap":2,"periodsPerDay":[9,9,8,9,7]}],"curriculum":{"1 KRISTAL":[{"name":"Bahasa Melayu","code":"BM","teacher":"Fazlina","waktu":4,"morning":false},{"name":"Matematik","code":"MT","teacher":"Fazlina","waktu":3,"morning":false},{"name":"Bahasa Inggeris","code":"BI","teacher":"Fazlina","waktu":3,"morning":false},{"name":"Pengurusan Diri","code":"PD","teacher":"Auni","waktu":6,"morning":false},{"name":"Kemahiran Manipulatif","code":"KM","teacher":"Auni","waktu":6,"morning":false},{"name":"Pendidikan Islam","code":"PI","teacher":"Hafizah","waktu":5,"morning":false},{"name":"Pendidikan Jasmani","code":"PJ","teacher":"Fazlina","waktu":4,"morning":true,"pair":true,"noDays":[0]},{"name":"Pendidikan Seni","code":"PSV","teacher":"Auni","waktu":4,"morning":false},{"name":"Pendidikan Muzik","code":"MZ","teacher":"Auni","waktu":3,"morning":false}],"2 INTAN":[{"name":"Bahasa Melayu","code":"BM","teacher":"Wahidah","waktu":4,"morning":false},{"name":"Matematik","code":"MT","teacher":"Wahidah","waktu":3,"morning":false},{"name":"Bahasa Inggeris","code":"BI","teacher":"Wahidah","waktu":3,"morning":false},{"name":"Pengurusan Diri","code":"PD","teacher":"Wahidah","waktu":6,"morning":false},{"name":"Kemahiran Manipulatif","code":"KM","teacher":"Wahidah","waktu":6,"morning":false},{"name":"Pendidikan Islam","code":"PI","teacher":"Hafizah","waktu":5,"morning":false},{"name":"Pendidikan Jasmani","code":"PJ","teacher":"Mukmin","waktu":4,"morning":true,"pair":true,"noDays":[0]},{"name":"Pendidikan Seni","code":"PSV","teacher":"Auni","waktu":4,"morning":false},{"name":"Pendidikan Muzik","code":"MZ","teacher":"Auni","waktu":3,"morning":false}],"4 BERLIAN":[{"name":"Bahasa Melayu","code":"BM","teacher":"Mukmin","waktu":5,"morning":false},{"name":"Matematik","code":"MT","teacher":"Mukmin","waktu":4,"morning":false},{"name":"Bahasa Inggeris","code":"BI","teacher":"Mukmin","waktu":4,"morning":false},{"name":"Pengurusan Diri","code":"PD","teacher":"Auni","waktu":2,"morning":false},{"name":"Kemahiran Manipulatif","code":"KM","teacher":"Fazlina","waktu":3,"morning":false},{"name":"Pendidikan Islam","code":"PI","teacher":"Hafizah","waktu":5,"morning":false},{"name":"Pendidikan Jasmani Kesihatan","code":"PJK","teacher":"Mukmin","waktu":3,"morning":true,"noDays":[0]},{"name":"Pendidikan Seni","code":"PS","teacher":"Fazlina","waktu":2,"morning":false},{"name":"Pendidikan Muzik","code":"MZ","teacher":"Fazlina","waktu":2,"morning":false},{"name":"Pend. Teknologi Maklumat & Komunikasi","code":"TMK","teacher":"Mukmin","waktu":2,"morning":false},{"name":"Kemahiran Hidup Asas","code":"KH","teacher":"Fazlina","waktu":5,"morning":false},{"name":"Pend. Sains, Sosial & Alam Sekitar","code":"PSSAS","teacher":"Mukmin","waktu":4,"morning":false}]},"unavailable":{"Hafizah":[[0,3,4],[0,1,3,4,7,8],[3,4,5,6,7,8],[0,1,2,3,7,8],[0,1,6,7]]},"perdanaNotes":{"Hafizah":[[0,3,4,"PI 6 BES (9.00–10.00)"],[0,9,9,"PI 4 BIJAK (12.20–1.20)"],[1,0,1,"TASMIK 4 BES (7.30–8.30)"],[1,3,4,"PI 3 BIJAK (9.00–10.00)"],[1,7,8,"TASMIK 4 BIJ (11.20–12.20)"],[1,9,9,"PI 6 BES (12.20–1.20)"],[2,3,4,"TASMIK 4 BES (9.00–10.00)"],[2,5,6,"PI 4 BIJAK (10.20–11.20)"],[2,7,8,"TASMIK 1 BIJ (11.20–12.20)"],[3,0,1,"PI 6 BES (7.30–8.30)"],[3,2,3,"PI 4 BIJAK (8.30–9.30)"],[3,7,8,"PI 3 BIJAK (11.20–12.20)"],[4,0,1,"TASMIK 2 BIJ (7.30–8.30)"],[4,6,7,"PI 3 BIJAK (10.50–11.50)"]]},"perdanaExtra":{"Hafizah":["Isnin 12.50–1.20: PI 4 BIJAK (sambungan)","Selasa 12.50–1.20: PI 6 BES (sambungan)"]}},"grid":{"1 KRISTAL":[["PERHIM","PSV","PSV","PD","PD","BM","PI","PI",null],["BM","MT","MT","KM","KM","PSV","PSV","PD",null],["MZ","MZ","PI","PD","BI","KM","KM","BM",null],["MZ","PJ","PJ","PD","PD","BM","BI","BI",null],["PJ","PJ","MT","PI","PI","KM","KM",null,null]],"2 INTAN":[["PERHIM","PD","PI","KM","BM","BM","BI","BI",null],["PSV","PSV","KM","PD","MT","MT","PI","BM",null],["PI","PI","MZ","BM","KM","KM","PD","PD",null],["PJ","PJ","PSV","PD","PI","MT","MZ","MZ",null],["BI","PJ","PJ","PD","PSV","KM","KM",null,null]],"4 BERLIAN":[["PERHIM","PI","PS","MZ","MZ","PSSAS","PSSAS","KM","KM"],["PJK","PJK","BM","MT","MT","PI","KH","KH","PSSAS"],["BM","BM","PS","KH","BI","BI","MT","MT",null],["KM","PD","PSSAS","BI","BI","PI","PI","TMK","TMK"],["PJK","PD","PI","KH","KH","BM","BM",null,null]]}};
 </script>
 <script>
 'use strict';
@@ -276,7 +284,16 @@ function deepCopy(o){return JSON.parse(JSON.stringify(o));}
 
 // ---------- Keadaan ----------
 let state = deepCopy(window.DEFAULT_STATE);
-const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false };
+const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false, admin:false };
+const ADMIN_TABS = ['editor','tetapan','panduan'];
+function adminPin(){ return String(state.config.adminPin || '191989'); }
+function openPinModal(action, title){
+  ui.pinAction = action;
+  openModal(`<h4>🔒 ${esc(title||'Masukkan PIN admin')}</h4>
+    <input id="pin-in" class="pinin" type="password" inputmode="numeric" maxlength="12" placeholder="••••••" autocomplete="off">
+    <div class="modal-foot"><button class="act primary" data-act="pin-ok">Sahkan</button> <button class="act" data-act="modal-close">Batal</button></div>`);
+  setTimeout(()=>{const i=document.getElementById('pin-in'); if(i) i.focus();}, 60);
+}
 
 // ---------- Derivasi konfigurasi ----------
 function derived(cfg){
@@ -864,6 +881,7 @@ function tetapanHTML(cfg){
 const PANDUAN = `
 <div class="panduan">
 <h3>Cara guna sistem ini</h3>
+<p><b>Mod admin.</b> Pengguna biasa hanya melihat tab <i>Senarai</i>, <i>Jadual Kelas</i> dan <i>Jadual Guru</i> (serta butang Cetak). Klik <b>🔒 Admin</b> dan masukkan PIN untuk membuka Editor, Tetapan, Jana Jadual dan Eksport/Import. Butang ⚡ Jana Jadual juga meminta PIN setiap kali sebagai perlindungan daripada jana secara tidak sengaja. Klik 🔓 Admin sekali lagi untuk kembali ke mod biasa. (PIN boleh ditukar melalui medan <code>adminPin</code> dalam fail Eksport JSON.)</p>
 <p><b>Melihat & mencetak.</b> Tab <i>Jadual Kelas</i> dan <i>Jadual Guru</i> memaparkan jadual semasa. Tekan <b>Cetak</b> untuk cetak tab yang sedang dibuka (sesuai untuk cetakan rasmi, orientasi landskap automatik).</p>
 <p><b>Telefon mudah alih.</b> Tab <i>📱 Senarai</i> direka untuk skrin kecil — pilih guru atau kelas dan jadual dipaparkan hari demi hari dalam bentuk senarai (dibuka secara automatik pada telefon). Jadual penuh juga boleh dileret ke kiri/kanan; lajur hari kekal kelihatan.</p>
 <p><b>Mengubah secara manual.</b> Di tab <i>Editor</i>, klik mana-mana sel — menu pilihan subjek akan terbuka. Sistem akan menanda <span style="color:#c0392b"><b>merah</b></span> secara automatik jika ada pertindihan guru, guru digunakan semasa slot perdana, kuota subjek tidak cukup, atau subjek berulang melebihi 2 waktu sehari. Senarai isu dipaparkan di bahagian atas.</p>
@@ -888,6 +906,12 @@ function renderAll(){
 
   document.getElementById('hdr-school').textContent=cfg.meta.school;
   document.getElementById('hdr-sub').textContent=`${cfg.meta.program} · ${cfg.meta.tahun}`;
+
+  // mod admin: hadkan tab untuk pengguna biasa
+  if(!ui.admin && ADMIN_TABS.includes(ui.tab)) ui.tab='kelas';
+  document.body.dataset.admin = ui.admin ? '1' : '0';
+  const ab=document.getElementById('admin-btn');
+  if(ab){ ab.textContent = ui.admin ? '🔓 Admin' : '🔒 Admin'; ab.classList.toggle('on', ui.admin); }
 
   const main=document.getElementById('main');
   document.body.dataset.tab=ui.tab;
@@ -1118,7 +1142,31 @@ document.addEventListener('click', e=>{
       <div class="modal-foot"><button class="act danger2" data-act="c-del-yes" data-name="${esc(name)}">Ya, buang</button> <button class="act" data-act="modal-close">Batal</button></div>`);
     return;
   }
-  else if(act==='jana'){ janaJadual(); return; }
+  else if(act==='admin-toggle'){
+    if(ui.admin){ ui.admin=false; toast('Mod admin dimatikan.'); renderAll(); }
+    else openPinModal('admin','Masukkan PIN admin');
+    return;
+  }
+  else if(act==='pin-ok'){
+    const inp=document.getElementById('pin-in');
+    const val=inp?inp.value.trim():'';
+    if(val===adminPin()){
+      const action=ui.pinAction;
+      ui.pinAction=null;
+      closeModal();
+      if(action==='admin'){ ui.admin=true; toast('Mod admin diaktifkan.'); renderAll(); }
+      else if(action==='jana'){ janaJadual(); }
+    } else {
+      if(inp){ inp.value=''; inp.focus(); }
+      toast('PIN salah.', true);
+    }
+    return;
+  }
+  else if(act==='jana'){
+    if(!ui.admin){ toast('Mod admin diperlukan.', true); return; }
+    openPinModal('jana','Masukkan PIN untuk jana jadual baharu');
+    return;
+  }
   else if(act==='cetak'){ try{ window.print(); }catch(err){ toast('Cetakan disekat dalam panel ini — buka fail HTML dalam pelayar untuk mencetak.',true);} return; }
   else if(act==='eksport'){
     openModal(`<h4>Eksport / Simpan</h4>
@@ -1136,6 +1184,14 @@ document.addEventListener('click', e=>{
   }
   else return;
   renderAll();
+});
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !document.getElementById('modal').hidden && document.getElementById('pin-in')){
+    e.preventDefault();
+    const b=document.querySelector('[data-act="pin-ok"]');
+    if(b) b.click();
+  }
 });
 
 document.getElementById('importfile').addEventListener('change', e=>{
