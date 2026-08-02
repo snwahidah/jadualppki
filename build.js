@@ -13,7 +13,7 @@ const config = {
     {start:'9.20',end:'9.50'},{start:'9.50',end:'10.20'},{start:'10.20',end:'10.50'},
     {start:'10.50',end:'11.20'},{start:'11.20',end:'11.50'},{start:'11.50',end:'12.20'}
   ],
-  extraPeriods: [{start:'12.20',end:'12.50'}],
+  extraPeriods: [{start:'12.20',end:'12.50'},{start:'12.50',end:'1.20'}],
   rehatAfter: 2,
   rehatLabel: 'REHAT 9.00 – 9.20',
   assembly: {day:0, period:0},
@@ -75,15 +75,15 @@ const config = {
   },
   perdanaNotes: {
     Hafizah: [
-      [0,3,4,'PI 6 BES (9.00–10.00)'],[0,9,9,'PI 4 BIJAK (12.20–1.20)'],
-      [1,0,1,'TASMIK 4 BES (7.30–8.30)'],[1,3,4,'PI 3 BIJAK (9.00–10.00)'],[1,7,8,'TASMIK 4 BIJ (11.20–12.20)'],[1,9,9,'PI 6 BES (12.20–1.20)'],
+      [0,3,4,'PI 6 BES (9.00–10.00)'],[0,9,10,'PI 4 BIJAK (12.20–1.20)'],
+      [1,0,1,'TASMIK 4 BES (7.30–8.30)'],[1,3,4,'PI 3 BIJAK (9.00–10.00)'],[1,7,8,'TASMIK 4 BIJ (11.20–12.20)'],[1,9,10,'PI 6 BES (12.20–1.20)'],
       [2,3,4,'TASMIK 4 BES (9.00–10.00)'],[2,5,6,'PI 4 BIJAK (10.20–11.20)'],[2,7,8,'TASMIK 1 BIJ (11.20–12.20)'],
       [3,0,1,'PI 6 BES (7.30–8.30)'],[3,2,3,'PI 4 BIJAK (8.30–9.30)'],[3,7,8,'PI 3 BIJAK (11.20–12.20)'],
       [4,0,1,'TASMIK 2 BIJ (7.30–8.30)'],[4,6,7,'PI 3 BIJAK (10.50–11.50)'],
     ],
   },
   perdanaExtra: {
-    Hafizah: ['Isnin 12.50–1.20: PI 4 BIJAK (sambungan)','Selasa 12.50–1.20: PI 6 BES (sambungan)'],
+    Hafizah: [],
   },
 };
 
