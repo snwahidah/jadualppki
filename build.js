@@ -20,6 +20,7 @@ const config = {
   morningPeriods: [0,1,2],
   maxPerDay: 7,
   adminPin: '191989',
+  repo: {owner:'snwahidah', name:'jadualppki', temaPath:'tema.json'},
   teachers: [
     {name:'Fazlina', color:'#AFD8F5'},
     {name:'Mukmin',  color:'#FAF0A8'},

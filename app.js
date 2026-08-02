@@ -17,10 +17,28 @@ function deepCopy(o){return JSON.parse(JSON.stringify(o));}
 let state = deepCopy(window.DEFAULT_STATE);
 // Guna semula warna yang pernah disimpan dalam pelayar ini (jika ada & jika storan dibenarkan)
 const COLOR_KEY='jadualppki_colors';
-try{
-  const saved=JSON.parse(localStorage.getItem(COLOR_KEY)||'null');
-  if(saved) for(const t of state.config.teachers) if(saved[t.name]) t.color=saved[t.name];
-}catch(e){/* storan disekat (cth: panel pratonton) — abaikan */}
+const GHTOK_KEY='jadualppki_ghtoken';
+function applyLocalColors(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(COLOR_KEY)||'null');
+    if(saved) for(const t of state.config.teachers) if(saved[t.name]) t.color=saved[t.name];
+  }catch(e){/* storan disekat — abaikan */}
+}
+applyLocalColors();
+// Tema global: baca tema.json dari laman (warna untuk SEMUA pengguna)
+(async function loadTema(){
+  try{
+    const r=await fetch('tema.json?v='+Date.now(), {cache:'no-store'});
+    if(r.ok){
+      const tema=await r.json();
+      if(tema && tema.colors){
+        for(const t of state.config.teachers) if(tema.colors[t.name]) t.color=tema.colors[t.name];
+        applyLocalColors(); // pilihan peribadi peranti ini mengatasi tema global
+        renderAll();
+      }
+    }
+  }catch(e){/* fail:// atau panel — abaikan */}
+})();
 const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false, admin:false };
 const ADMIN_TABS = ['editor','tetapan','panduan'];
 const PRESET_COLORS = ['#FF8894','#FFA1B2','#8485B5','#B16F94','#176298','#5CC2C6','#B2DCA1','#7CCCAA','#A05757','#C68483','#E9BFC1','#F6DCDF'];
@@ -314,6 +332,42 @@ async function janaJadual(){
   } finally { ui.busy=false; renderAll(); }
 }
 
+// ---------- Simpan tema global ke GitHub ----------
+async function saveColorsGlobal(){
+  const cfg=state.config;
+  const repo=cfg.repo||{owner:'snwahidah',name:'jadualppki',temaPath:'tema.json'};
+  const inp=document.getElementById('gh-tok');
+  const tok=inp?inp.value.trim():'';
+  if(!tok){ toast('Sila masukkan token GitHub.', true); return; }
+  try{ localStorage.setItem(GHTOK_KEY, tok); }catch(e){}
+  const api=`https://api.github.com/repos/${repo.owner}/${repo.name}/contents/${repo.temaPath}`;
+  const headers={ 'Authorization':'Bearer '+tok, 'Accept':'application/vnd.github+json', 'Content-Type':'application/json' };
+  const status=document.getElementById('jana-status');
+  if(status) status.textContent='Menyimpan tema ke GitHub...';
+  try{
+    let sha=null;
+    const g=await fetch(api, {headers});
+    if(g.ok){ sha=(await g.json()).sha; }
+    const colors={};
+    for(const t of cfg.teachers) colors[t.name]=t.color;
+    const payload=JSON.stringify({updated:new Date().toISOString(), colors}, null, 1);
+    const body={ message:'Kemas kini warna tema (dari aplikasi)', content: btoa(unescape(encodeURIComponent(payload))) };
+    if(sha) body.sha=sha;
+    const putr=await fetch(api, {method:'PUT', headers, body: JSON.stringify(body)});
+    if(putr.ok){
+      closeModal();
+      toast('🌐 Berjaya! Warna disimpan untuk semua pengguna — laman akan dikemas kini dalam 1–2 minit.');
+    } else {
+      const j=await putr.json().catch(()=>({}));
+      toast('Gagal simpan: '+(j.message||('HTTP '+putr.status))+'. Semak token (perlu kebenaran Contents: Read and write).', true);
+    }
+  }catch(e){
+    toast('Tidak dapat hubungi GitHub — semak sambungan internet. ('+String(e).slice(0,60)+')', true);
+  } finally {
+    if(status) status.textContent='';
+  }
+}
+
 // ---------- Paparan ----------
 function toast(msg, isErr){
   const t=document.getElementById('toast');
@@ -602,8 +656,9 @@ function tetapanHTML(cfg){
       <table class="mini"><thead><tr><th>Nama</th><th>Warna</th><th></th></tr></thead><tbody>${teacherRows}</tbody></table>
       <button class="sm" data-act="t-add">+ Tambah guru</button>
       <span style="width:14px;display:inline-block"></span>
-      <button class="sm" data-act="save-colors">💾 Simpan warna</button>
-      <button class="sm" data-act="clear-colors">↩ Buang simpanan warna</button>
+      <button class="sm" data-act="save-colors">💾 Simpan warna (peranti ini)</button>
+      <button class="sm" data-act="clear-colors">↩ Buang simpanan</button>
+      <button class="sm" data-act="save-colors-global" style="font-weight:700">🌐 Simpan untuk SEMUA pengguna</button>
       <div class="hint">Guru bertukar? Tukar sahaja namanya — semua subjek & jadual akan ikut. Guru baharu mengambil alih tugas guru lama: tukar nama guru lama kepada nama baharu.</div>
       <div class="hint"><b>💾 Simpan warna</b> menyimpan warna dalam pelayar/peranti ini sahaja — warna akan kekal dipakai setiap kali anda buka aplikasi di sini (berfungsi pada fail HTML & laman web; tidak disokong dalam panel pratonton Cowork). Untuk jadikan warna lalai kekal bagi <i>semua</i> pengguna, guna Eksport JSON dan minta Claude membenamkannya.</div>
     </fieldset>
@@ -943,6 +998,19 @@ document.addEventListener('click', e=>{
       localStorage.removeItem(COLOR_KEY);
       toast('Simpanan warna dibuang. Muat semula halaman untuk kembali ke warna lalai.');
     }catch(e){ toast('Simpanan pelayar disekat dalam panel ini.', true); }
+    return;
+  }
+  else if(act==='save-colors-global'){
+    let tok='';
+    try{ tok=localStorage.getItem(GHTOK_KEY)||''; }catch(e){}
+    openModal(`<h4>🌐 Simpan warna untuk semua pengguna</h4>
+      <p style="font-size:12.5px">Warna semasa akan ditulis ke fail <code>tema.json</code> dalam repo GitHub, dan semua pengguna laman akan mendapat warna baharu dalam beberapa minit. Perlukan token GitHub anda (kekal dalam pelayar ini sahaja, tidak dikongsi).</p>
+      <input id="gh-tok" class="jsonta" style="height:auto;padding:8px;font-size:12px" type="password" placeholder="github_pat_..." value="${esc(tok)}">
+      <div class="modal-foot"><button class="act primary" data-act="global-colors-go">Simpan ke GitHub</button> <button class="act" data-act="modal-close">Batal</button></div>`);
+    return;
+  }
+  else if(act==='global-colors-go'){
+    saveColorsGlobal();
     return;
   }
   else if(act==='cetak'){ try{ window.print(); }catch(err){ toast('Cetakan disekat dalam panel ini — buka fail HTML dalam pelayar untuk mencetak.',true);} return; }
