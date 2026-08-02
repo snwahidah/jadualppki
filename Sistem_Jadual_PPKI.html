@@ -270,6 +270,24 @@
     body[data-tab="guru"] #main{zoom:.62}
     body[data-printone="1"] #main{zoom:1 !important}
     body[data-printone="1"] .gridblock{page-break-after:auto}
+
+    /* Cetak SATU jadual di desktop: penuhkan halaman landskap, teks besar, lajur seragam */
+    body[data-printone="1"] table.jadual{table-layout:fixed;width:100%}
+    body[data-printone="1"]:not([data-rotmob="1"]) .gridblock h3{font-size:18px;margin:0 0 2mm}
+    body[data-printone="1"]:not([data-rotmob="1"]) .tahap{font-size:11px}
+    body[data-printone="1"]:not([data-rotmob="1"]) .tamat{font-size:10px;margin-bottom:2mm}
+    body[data-printone="1"]:not([data-rotmob="1"]) .jadual thead th{font-size:12px;padding:2mm 1mm}
+    body[data-printone="1"]:not([data-rotmob="1"]) .pnum{font-size:14px}
+    body[data-printone="1"]:not([data-rotmob="1"]) .ptime{font-size:9.5px}
+    body[data-printone="1"]:not([data-rotmob="1"]) .daycol{font-size:12.5px;width:22mm}
+    body[data-printone="1"]:not([data-rotmob="1"]) .jadual td{height:25mm;font-size:13px}
+    body[data-printone="1"]:not([data-rotmob="1"]) .scode{font-size:16px}
+    body[data-printone="1"]:not([data-rotmob="1"]) .tname{font-size:10.5px}
+    body[data-printone="1"]:not([data-rotmob="1"]) .perhim{font-size:15px}
+    body[data-printone="1"]:not([data-rotmob="1"]) .perdana{font-size:9.5px}
+    body[data-printone="1"]:not([data-rotmob="1"]) .rehat-col,
+    body[data-printone="1"]:not([data-rotmob="1"]) .rehat-cell{width:7mm}
+    body[data-printone="1"]:not([data-rotmob="1"]) .rehat-merged{font-size:11px;line-height:1.8}
   }
 
   /* Paksa landskap di telefon: kertas potret + kandungan diputar 90°
