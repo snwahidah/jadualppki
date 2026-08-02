@@ -15,7 +15,7 @@ function deepCopy(o){return JSON.parse(JSON.stringify(o));}
 
 // ---------- Keadaan ----------
 let state = deepCopy(window.DEFAULT_STATE);
-const ui = { tab:'kelas', tetapanGuru:0, busy:false };
+const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false };
 
 // ---------- Derivasi konfigurasi ----------
 function derived(cfg){
@@ -431,6 +431,64 @@ function quotaChipsHTML(cfg, grid, cname){
   }).join(' ');
 }
 
+// ---------- Tab: Senarai (paparan mudah alih) ----------
+function senaraiHTML(cfg, grid){
+  const D=derived(cfg);
+  if(!ui.list) ui.list={type:'guru', name:cfg.teachers[0]?cfg.teachers[0].name:''};
+  const mode=ui.list;
+  const names = mode.type==='guru' ? cfg.teachers.map(t=>t.name) : cfg.classes.map(c=>c.name);
+  if(!names.includes(mode.name)) mode.name=names[0]||'';
+  const typeChips=`<button class="ddbtn ${mode.type==='guru'?'sel':''}" data-act="list-type" data-v="guru">Ikut Guru</button>
+    <button class="ddbtn ${mode.type==='kelas'?'sel':''}" data-act="list-type" data-v="kelas">Ikut Kelas</button>`;
+  const nameChips=names.map(n=>{
+    const col = mode.type==='guru' ? teacherColor(n) : '#888';
+    return `<button class="ddbtn ${n===mode.name?'sel':''}" data-act="list-name" data-v="${esc(n)}">${mode.type==='guru'?`<span class="dot" style="background:${col}"></span> `:''}${esc(n)}</button>`;
+  }).join(' ');
+  const notes=(cfg.perdanaNotes||{})[mode.name]||[];
+  const noteMap={};
+  for(const [d,ps,pe,label] of notes) for(let p=ps;p<=pe;p++) noteMap[d+'|'+p]=label;
+
+  let cards='';
+  for(let d=0;d<cfg.days.length;d++){
+    let rows='', jum=0;
+    for(let p=0;p<D.NP;p++){
+      if(p===cfg.rehatAfter+1) rows+=`<div class="lrow lrehat"><span class="ltime"></span><span class="lmain">☕ ${esc(cfg.rehatLabel)}</span></div>`;
+      const time=`${cfg.periods[p].start}–${cfg.periods[p].end}`;
+      const isAsm = d===cfg.assembly.day && p===cfg.assembly.period;
+      if(mode.type==='kelas'){
+        if(!D.inSession(mode.name,d,p)) continue;
+        const v=grid[mode.name]&&grid[mode.name][d]?grid[mode.name][d][p]:null;
+        if(v==='PERHIM'){ rows+=`<div class="lrow"><span class="ltime">${time}</span><span class="lchip" style="background:#f5f0dc">✦</span><span class="lmain">Perhimpunan</span></div>`; continue; }
+        const s=(cfg.curriculum[mode.name]||[]).find(x=>x.code===v);
+        const t=v?D.teacherOf[mode.name][v]:null;
+        const bg=t?teacherColor(t):'#eee';
+        rows+=`<div class="lrow"><span class="ltime">${time}</span><span class="lchip" style="background:${bg};color:${textColorFor(bg)}">${v?esc(v):'—'}</span><span class="lmain">${s?esc(s.name):''}${t?` <small>· ${esc(t)}</small>`:''}</span></div>`;
+        jum += v&&v!=='PERHIM'?1:0;
+      } else {
+        let cell=null;
+        for(const c of D.classNames){
+          const v=grid[c]&&grid[c][d]?grid[c][d][p]:null;
+          if(v&&v!=='PERHIM'&&D.inSession(c,d,p)&&D.teacherOf[c][v]===mode.name){cell={c,v};break;}
+        }
+        if(cell){
+          const s=(cfg.curriculum[cell.c]||[]).find(x=>x.code===cell.v);
+          const bg=teacherColor(mode.name);
+          rows+=`<div class="lrow"><span class="ltime">${time}</span><span class="lchip" style="background:${bg};color:${textColorFor(bg)}">${esc(cell.v)}</span><span class="lmain">${s?esc(s.name):''} <small>· ${esc(cell.c)}</small></span></div>`;
+          jum++;
+        } else if(isAsm){
+          rows+=`<div class="lrow"><span class="ltime">${time}</span><span class="lchip" style="background:#f5f0dc">✦</span><span class="lmain">Perhimpunan</span></div>`;
+        } else if(D.unav[mode.name]&&D.unav[mode.name][d][p]){
+          rows+=`<div class="lrow lperdana"><span class="ltime">${time}</span><span class="lchip" style="background:#4a4a58;color:#fff">P</span><span class="lmain">${esc(noteMap[d+'|'+p]||'Tugas perdana')}</span></div>`;
+        }
+      }
+    }
+    const extra = mode.type==='guru' ? ((cfg.perdanaExtra||{})[mode.name]||[]).filter(x=>x.startsWith(cfg.days[d])) : [];
+    for(const x of extra) rows+=`<div class="lrow lperdana"><span class="ltime"></span><span class="lchip" style="background:#4a4a58;color:#fff">P</span><span class="lmain">${esc(x.replace(cfg.days[d],'').replace(/^\s*/,''))}</span></div>`;
+    cards+=`<div class="daycard"><h4>${esc(cfg.days[d].toUpperCase())}${mode.type==='guru'?` <span class="tahap">— ${jum} waktu</span>`:''}</h4>${rows||'<div class="hint">Tiada jadual</div>'}</div>`;
+  }
+  return `<div class="listpick">${typeChips}<div style="height:6px"></div>${nameChips}</div>${cards}`;
+}
+
 // ---------- Tab: Tetapan ----------
 function consSummary(s){
   const parts=[];
@@ -530,6 +588,7 @@ const PANDUAN = `
 <div class="panduan">
 <h3>Cara guna sistem ini</h3>
 <p><b>Melihat & mencetak.</b> Tab <i>Jadual Kelas</i> dan <i>Jadual Guru</i> memaparkan jadual semasa. Tekan <b>Cetak</b> untuk cetak tab yang sedang dibuka (sesuai untuk cetakan rasmi, orientasi landskap automatik).</p>
+<p><b>Telefon mudah alih.</b> Tab <i>📱 Senarai</i> direka untuk skrin kecil — pilih guru atau kelas dan jadual dipaparkan hari demi hari dalam bentuk senarai (dibuka secara automatik pada telefon). Jadual penuh juga boleh dileret ke kiri/kanan; lajur hari kekal kelihatan.</p>
 <p><b>Mengubah secara manual.</b> Di tab <i>Editor</i>, klik mana-mana sel — menu pilihan subjek akan terbuka. Sistem akan menanda <span style="color:#c0392b"><b>merah</b></span> secara automatik jika ada pertindihan guru, guru digunakan semasa slot perdana, kuota subjek tidak cukup, atau subjek berulang melebihi 2 waktu sehari. Senarai isu dipaparkan di bahagian atas.</p>
 <p><b>Panel Cowork vs pelayar.</b> Aplikasi ini berfungsi sepenuhnya dalam panel Cowork. Namun jika butang Cetak atau Muat turun disekat oleh panel, buka fail <b>Sistem_Jadual_PPKI.html</b> (dalam folder Jadual PPKI anda) dengan Chrome/Edge — semua fungsi tersedia di sana.</p>
 <p><b>Guru bertukar / berpindah.</b> Di tab <i>Tetapan</i>: (1) tukar nama guru lama kepada nama guru baharu (semua kelas akan ikut), atau agihkan semula subjek melalui pilihan Guru dalam jadual peruntukan; (2) jika guru baharu ada komitmen aliran perdana, kemas kini grid "Slot tidak tersedia"; (3) tekan <b>⚡ Jana Jadual</b>.</p>
@@ -567,6 +626,8 @@ function renderAll(){
       : `<div class="issuebox ok">Tiada isu — jadual sah. ✓</div>`;
     main.innerHTML = list + cfg.classes.map(c=>
       `<div class="gridblock">${classGridHTML(cfg,grid,c.name,true)}<div class="chips">${quotaChipsHTML(cfg,grid,c.name)}</div></div>`).join('');
+  } else if(ui.tab==='senarai'){
+    main.innerHTML = senaraiHTML(cfg, grid);
   } else if(ui.tab==='tetapan'){
     main.innerHTML = tetapanHTML(cfg);
   } else {
@@ -675,6 +736,8 @@ document.addEventListener('click', e=>{
     closeModal(); renderAll(); return;
   }
   if(act==='uv-guru-chip'){ ui.tetapanGuru=+t.dataset.i; renderAll(); return; }
+  if(act==='list-type'){ ui.list=ui.list||{}; ui.list.type=t.dataset.v; renderAll(); return; }
+  if(act==='list-name'){ ui.list=ui.list||{type:'guru'}; ui.list.name=t.dataset.v; renderAll(); return; }
   if(act==='pick-cons'){
     ui.pickCons={ci:+t.dataset.c, si:+t.dataset.i};
     openModal(consModalHTML());

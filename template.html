@@ -98,6 +98,47 @@
   .editcell{cursor:pointer}
   .editcell:hover{filter:brightness(.92)}
 
+  /* Paparan senarai (mudah alih) */
+  .listpick{background:#fff;border:1px solid #dfe2e8;border-radius:10px;padding:10px 14px;margin-bottom:10px}
+  .listpick .ddbtn{margin:2px 2px 2px 0;padding:6px 12px}
+  .daycard{background:#fff;border:1px solid #dfe2e8;border-radius:10px;padding:10px 14px;margin-bottom:10px}
+  .daycard h4{margin:2px 0 6px;font-size:14px;letter-spacing:.5px}
+  .lrow{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #f0f0f3;font-size:13.5px}
+  .lrow:last-child{border-bottom:none}
+  .ltime{color:var(--soft);min-width:88px;font-size:11.5px;flex-shrink:0}
+  .lchip{min-width:48px;text-align:center;font-weight:700;border-radius:6px;padding:4px 6px;border:1px solid #0002;font-size:12px;flex-shrink:0}
+  .lmain{line-height:1.25}
+  .lmain small{color:var(--soft)}
+  .lrehat{background:#f6f7f9;border-radius:6px;padding-left:6px;color:var(--soft);font-size:12px}
+  .lperdana .lmain{color:#4a4a58;font-size:12.5px}
+
+  /* Lajur hari kekal semasa leret */
+  .jadual .daycol{position:sticky;left:0;z-index:2;box-shadow:1px 0 0 var(--line)}
+  .jadual thead th.daycol{z-index:3}
+
+  @media (max-width:640px){
+    .wrap{padding:8px 8px 40px}
+    header h1{font-size:14.5px}
+    header .sub{font-size:10px}
+    header .title2{font-size:11px;letter-spacing:.5px}
+    .toolbar{gap:5px;margin:8px 0 10px}
+    .tabbtn,.act{padding:6px 9px;font-size:11.5px;border-radius:7px}
+    .pill{font-size:11px;padding:4px 9px}
+    .gridblock{padding:8px 8px;border-radius:8px}
+    table.jadual{min-width:620px}
+    .jadual td{height:36px;font-size:10px;padding:1px}
+    .scode{font-size:10.5px}
+    .tname{font-size:8px}
+    .daycol{width:52px;font-size:9.5px}
+    .pnum{font-size:11px}
+    .ptime{font-size:8px}
+    .modal-box{padding:12px 14px;max-height:90vh}
+    .optbtn{padding:10px 10px}
+    .mini th,.mini td{padding:3px 5px;font-size:11px}
+    .wide{width:100%}
+    .ltime{min-width:80px}
+  }
+
   @media print{
     @page{size:A4 landscape;margin:8mm}
     body{background:#fff}
@@ -119,6 +160,7 @@
     <div class="title2">JADUAL WAKTU PROGRAM PENDIDIKAN KHAS INTEGRASI</div>
   </header>
   <div class="toolbar">
+    <button class="tabbtn" data-tab="senarai">📱 Senarai</button>
     <button class="tabbtn" data-tab="kelas">Jadual Kelas</button>
     <button class="tabbtn" data-tab="guru">Jadual Guru</button>
     <button class="tabbtn" data-tab="editor">Editor</button>
