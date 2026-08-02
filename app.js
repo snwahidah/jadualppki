@@ -25,19 +25,28 @@ function applyLocalColors(){
   }catch(e){/* storan disekat — abaikan */}
 }
 applyLocalColors();
-// Tema global: baca tema.json dari laman (warna untuk SEMUA pengguna)
-(async function loadTema(){
+// Muatan global dari laman: data.json (SELURUH jadual+tetapan yang diterbitkan admin),
+// kemudian tema.json (warna), kemudian pilihan warna peranti ini.
+(async function loadRemote(){
+  let changed=false;
+  try{
+    const r=await fetch('data.json?v='+Date.now(), {cache:'no-store'});
+    if(r.ok){
+      const s=await r.json();
+      if(s && s.config && s.grid && s.config.teachers && s.config.classes){ state=s; changed=true; }
+    }
+  }catch(e){/* fail:// atau panel — abaikan */}
   try{
     const r=await fetch('tema.json?v='+Date.now(), {cache:'no-store'});
     if(r.ok){
       const tema=await r.json();
       if(tema && tema.colors){
         for(const t of state.config.teachers) if(tema.colors[t.name]) t.color=tema.colors[t.name];
-        applyLocalColors(); // pilihan peribadi peranti ini mengatasi tema global
-        renderAll();
+        changed=true;
       }
     }
-  }catch(e){/* fail:// atau panel — abaikan */}
+  }catch(e){}
+  if(changed){ applyLocalColors(); renderAll(); }
 })();
 const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false, admin:false };
 const ADMIN_TABS = ['editor','tetapan','panduan'];
@@ -332,34 +341,43 @@ async function janaJadual(){
   } finally { ui.busy=false; renderAll(); }
 }
 
-// ---------- Simpan tema global ke GitHub ----------
-async function saveColorsGlobal(){
+// ---------- Terbit ke GitHub (untuk semua pengguna) ----------
+async function ghPut(tok, path, payloadStr, msg){
+  const repo=state.config.repo||{owner:'snwahidah',name:'jadualppki'};
+  const api=`https://api.github.com/repos/${repo.owner}/${repo.name}/contents/${path}`;
+  const headers={ 'Authorization':'Bearer '+tok, 'Accept':'application/vnd.github+json', 'Content-Type':'application/json' };
+  let sha=null;
+  const g=await fetch(api, {headers});
+  if(g.ok){ sha=(await g.json()).sha; }
+  const body={ message:msg, content: btoa(unescape(encodeURIComponent(payloadStr))) };
+  if(sha) body.sha=sha;
+  return fetch(api, {method:'PUT', headers, body: JSON.stringify(body)});
+}
+
+async function publishGlobal(){
   const cfg=state.config;
-  const repo=cfg.repo||{owner:'snwahidah',name:'jadualppki',temaPath:'tema.json'};
+  const repo=cfg.repo||{owner:'snwahidah',name:'jadualppki'};
   const inp=document.getElementById('gh-tok');
   const tok=inp?inp.value.trim():'';
   if(!tok){ toast('Sila masukkan token GitHub.', true); return; }
   try{ localStorage.setItem(GHTOK_KEY, tok); }catch(e){}
-  const api=`https://api.github.com/repos/${repo.owner}/${repo.name}/contents/${repo.temaPath}`;
-  const headers={ 'Authorization':'Bearer '+tok, 'Accept':'application/vnd.github+json', 'Content-Type':'application/json' };
   const status=document.getElementById('jana-status');
-  if(status) status.textContent='Menyimpan tema ke GitHub...';
+  if(status) status.textContent='Menerbitkan ke GitHub...';
   try{
-    let sha=null;
-    const g=await fetch(api, {headers});
-    if(g.ok){ sha=(await g.json()).sha; }
+    // 1. data.json — keseluruhan jadual + tetapan
+    const dataStr=JSON.stringify({published:new Date().toISOString(), config:state.config, grid:state.grid});
+    const r1=await ghPut(tok, repo.dataPath||'data.json', dataStr, 'Terbit jadual & tetapan (dari aplikasi)');
+    // 2. tema.json — warna (untuk keserasian)
     const colors={};
     for(const t of cfg.teachers) colors[t.name]=t.color;
-    const payload=JSON.stringify({updated:new Date().toISOString(), colors}, null, 1);
-    const body={ message:'Kemas kini warna tema (dari aplikasi)', content: btoa(unescape(encodeURIComponent(payload))) };
-    if(sha) body.sha=sha;
-    const putr=await fetch(api, {method:'PUT', headers, body: JSON.stringify(body)});
-    if(putr.ok){
+    const r2=await ghPut(tok, repo.temaPath||'tema.json', JSON.stringify({updated:new Date().toISOString(), colors}, null, 1), 'Kemas kini warna tema (dari aplikasi)');
+    if(r1.ok && r2.ok){
       closeModal();
-      toast('🌐 Berjaya! Warna disimpan untuk semua pengguna — laman akan dikemas kini dalam 1–2 minit.');
+      toast('🌐 Diterbitkan! Semua pengguna laman akan mendapat jadual, tetapan & warna terkini dalam 1–2 minit.');
     } else {
-      const j=await putr.json().catch(()=>({}));
-      toast('Gagal simpan: '+(j.message||('HTTP '+putr.status))+'. Semak token (perlu kebenaran Contents: Read and write).', true);
+      const bad = r1.ok ? r2 : r1;
+      const j=await bad.json().catch(()=>({}));
+      toast('Gagal terbit: '+(j.message||('HTTP '+bad.status))+'. Semak token (perlu Contents: Read and write untuk repo '+repo.name+').', true);
     }
   }catch(e){
     toast('Tidak dapat hubungi GitHub — semak sambungan internet. ('+String(e).slice(0,60)+')', true);
@@ -658,9 +676,9 @@ function tetapanHTML(cfg){
       <span style="width:14px;display:inline-block"></span>
       <button class="sm" data-act="save-colors">💾 Simpan warna (peranti ini)</button>
       <button class="sm" data-act="clear-colors">↩ Buang simpanan</button>
-      <button class="sm" data-act="save-colors-global" style="font-weight:700">🌐 Simpan untuk SEMUA pengguna</button>
+      <button class="sm" data-act="save-colors-global" style="font-weight:700">🌐 Terbit ke laman (SEMUA pengguna)</button>
       <div class="hint">Guru bertukar? Tukar sahaja namanya — semua subjek & jadual akan ikut. Guru baharu mengambil alih tugas guru lama: tukar nama guru lama kepada nama baharu.</div>
-      <div class="hint"><b>💾 Simpan warna</b> menyimpan warna dalam pelayar/peranti ini sahaja — warna akan kekal dipakai setiap kali anda buka aplikasi di sini (berfungsi pada fail HTML & laman web; tidak disokong dalam panel pratonton Cowork). Untuk jadikan warna lalai kekal bagi <i>semua</i> pengguna, guna Eksport JSON dan minta Claude membenamkannya.</div>
+      <div class="hint"><b>💾 Simpan warna</b> = pelayar/peranti ini sahaja. <b>🌐 Terbit ke laman</b> = menerbitkan KESELURUHAN keadaan semasa (jadual, tetapan & warna) ke laman web supaya semua pengguna mendapat versi terkini — perlukan token GitHub (fine-grained, repo jadualppki, Contents: Read and write; luput boleh ditetapkan sehingga 1 tahun).</div>
     </fieldset>
     <fieldset><legend>Slot tidak tersedia (jadual perdana / tugas luar)</legend>
       <div>Guru: ${tsel}</div>
@@ -684,7 +702,7 @@ const PANDUAN = `
 <p><b>Mengubah secara manual.</b> Di tab <i>Editor</i>, klik mana-mana sel — menu pilihan subjek akan terbuka. Sistem akan menanda <span style="color:#c0392b"><b>merah</b></span> secara automatik jika ada pertindihan guru, guru digunakan semasa slot perdana, kuota subjek tidak cukup, atau subjek berulang melebihi 2 waktu sehari. Senarai isu dipaparkan di bahagian atas.</p>
 <p><b>Panel Cowork vs pelayar.</b> Aplikasi ini berfungsi sepenuhnya dalam panel Cowork. Namun jika butang Cetak atau Muat turun disekat oleh panel, buka fail <b>Sistem_Jadual_PPKI.html</b> (dalam folder Jadual PPKI anda) dengan Chrome/Edge — semua fungsi tersedia di sana.</p>
 <p><b>Guru bertukar / berpindah.</b> Di tab <i>Tetapan</i>: (1) tukar nama guru lama kepada nama guru baharu (semua kelas akan ikut), atau agihkan semula subjek melalui pilihan Guru dalam jadual peruntukan; (2) jika guru baharu ada komitmen aliran perdana, kemas kini grid "Slot tidak tersedia"; (3) tekan <b>⚡ Jana Jadual</b>.</p>
-<p><b>Tahun baharu.</b> Kemas kini peruntukan subjek/waktu dan waktu tamat di <i>Tetapan</i> (pastikan jumlah peruntukan = slot P&P), kemudian <b>⚡ Jana Jadual</b>. Penjana akan mencari susunan tanpa pertindihan yang menghormati semua kekangan secara automatik.</p>
+<p><b>Tahun baharu.</b> Kemas kini peruntukan subjek/waktu dan waktu tamat di <i>Tetapan</i> (pastikan jumlah peruntukan = slot P&P), kemudian <b>⚡ Jana Jadual</b>. Penjana akan mencari susunan tanpa pertindihan yang menghormati semua kekangan secara automatik. Selepas puas hati, tekan <b>🌐 Terbit ke laman</b> (di Tetapan → Guru) supaya semua pengguna laman web mendapat jadual baharu — dan simpan juga satu Eksport JSON sebagai arkib tahun itu.</p>
 <p><b>⚠️ Simpanan.</b> Aplikasi ini tidak menyimpan secara automatik. Selepas sebarang perubahan, tekan <b>Eksport JSON</b> dan simpan fail itu. Untuk sambung kerja, tekan <b>Import JSON</b> dan pilih fail simpanan anda. Anda juga boleh meminta Claude mengemas kini artifact ini secara kekal dengan memberikan fail JSON tersebut.</p>
 <h3>Kekangan yang dijaga oleh sistem</h3>
 <p>Seorang guru tidak boleh mengajar 2 kelas serentak · guru tidak dijadualkan semasa slot "tidak tersedia" (jadual perdana) · kuota waktu setiap subjek dipenuhi tepat · maksimum 2 waktu subjek yang sama sehari dan mesti bersebelahan · subjek bertanda "Pagi" (PJ/PJK) dijadualkan sebelum rehat sahaja · subjek bertanda "Berpasangan" (PJ) mesti 2 waktu berturutan · hari larangan subjek (cth: PJ/PJK tiada pada Isnin) · had beban harian guru · perhimpunan Isnin waktu 1 untuk semua. Semua kekangan ini boleh diubah bagi setiap subjek melalui butang <b>Kekangan</b> di tab Tetapan.</p>
@@ -1003,14 +1021,14 @@ document.addEventListener('click', e=>{
   else if(act==='save-colors-global'){
     let tok='';
     try{ tok=localStorage.getItem(GHTOK_KEY)||''; }catch(e){}
-    openModal(`<h4>🌐 Simpan warna untuk semua pengguna</h4>
-      <p style="font-size:12.5px">Warna semasa akan ditulis ke fail <code>tema.json</code> dalam repo GitHub, dan semua pengguna laman akan mendapat warna baharu dalam beberapa minit. Perlukan token GitHub anda (kekal dalam pelayar ini sahaja, tidak dikongsi).</p>
+    openModal(`<h4>🌐 Terbit ke laman — untuk semua pengguna</h4>
+      <p style="font-size:12.5px">Keseluruhan keadaan semasa (<b>jadual, tetapan, kekangan & warna</b>) akan diterbitkan ke laman web, dan semua pengguna mendapat versi terkini dalam 1–2 minit. Perlukan token GitHub anda (kekal dalam pelayar ini sahaja, tidak dikongsi; jika luput, tampal token baharu di sini).</p>
       <input id="gh-tok" class="jsonta" style="height:auto;padding:8px;font-size:12px" type="password" placeholder="github_pat_..." value="${esc(tok)}">
-      <div class="modal-foot"><button class="act primary" data-act="global-colors-go">Simpan ke GitHub</button> <button class="act" data-act="modal-close">Batal</button></div>`);
+      <div class="modal-foot"><button class="act primary" data-act="global-colors-go">🌐 Terbit sekarang</button> <button class="act" data-act="modal-close">Batal</button></div>`);
     return;
   }
   else if(act==='global-colors-go'){
-    saveColorsGlobal();
+    publishGlobal();
     return;
   }
   else if(act==='cetak'){ try{ window.print(); }catch(err){ toast('Cetakan disekat dalam panel ini — buka fail HTML dalam pelayar untuk mencetak.',true);} return; }

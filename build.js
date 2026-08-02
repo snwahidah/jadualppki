@@ -20,7 +20,7 @@ const config = {
   morningPeriods: [0,1,2],
   maxPerDay: 7,
   adminPin: '191989',
-  repo: {owner:'snwahidah', name:'jadualppki', temaPath:'tema.json'},
+  repo: {owner:'snwahidah', name:'jadualppki', temaPath:'tema.json', dataPath:'data.json'},
   teachers: [
     {name:'Fazlina', color:'#AFD8F5'},
     {name:'Mukmin',  color:'#FAF0A8'},
@@ -96,4 +96,5 @@ html = html.replace('/*__APP__*/', () => app);
 const logoB64 = fs.readFileSync('/home/user/jadual/logo_small.jpg').toString('base64');
 html = html.replace('__LOGO__', 'data:image/jpeg;base64,' + logoB64);
 fs.writeFileSync('/home/user/jadual/Sistem_Jadual_PPKI.html', html);
-console.log('OK', (html.length/1024).toFixed(1)+'KB');
+fs.writeFileSync('/home/user/jadual/data.json', JSON.stringify({published:new Date().toISOString(), config, grid}));
+console.log('OK', (html.length/1024).toFixed(1)+'KB + data.json');
