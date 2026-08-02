@@ -19,11 +19,11 @@ const config = {
   morningPeriods: [0,1,2],
   maxPerDay: 7,
   teachers: [
-    {name:'Fazlina', color:'#4FB3E8'},
-    {name:'Mukmin',  color:'#F5E13B'},
-    {name:'Auni',    color:'#00A651'},
-    {name:'Wahidah', color:'#ED1C24'},
-    {name:'Hafizah', color:'#D97BC7'},
+    {name:'Fazlina', color:'#AFD8F5'},
+    {name:'Mukmin',  color:'#FAF0A8'},
+    {name:'Auni',    color:'#B5E6C8'},
+    {name:'Wahidah', color:'#F6B3B6'},
+    {name:'Hafizah', color:'#EFC9EA'},
   ],
   classes: [
     {name:'1 KRISTAL', tahap:1, periodsPerDay:[8,8,8,8,7]},
