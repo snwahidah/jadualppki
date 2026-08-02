@@ -276,12 +276,12 @@
      (diaktifkan oleh JS semasa cetak satu guru/kelas pada peranti mudah alih) */
   @media print{
     body[data-rotmob="1"] header{display:none !important}
-    body[data-rotmob="1"] #main{zoom:1.4 !important}
+    body[data-rotmob="1"] #main{zoom:1.25 !important}
     body[data-rotmob="1"] .wrap{
       transform: rotate(90deg) translateY(-100%);
       transform-origin: top left;
-      width: 260mm;   /* menjadi arah 'tinggi' kertas potret */
-      height: 172mm;  /* dikunci supaya PASTI muat 1 halaman */
+      width: 238mm;   /* menjadi arah 'tinggi' kertas potret (+penampan margin telefon) */
+      height: 162mm;  /* dikunci supaya PASTI muat 1 halaman */
       overflow: hidden;
       padding: 1mm !important;
       margin: 0 !important;
