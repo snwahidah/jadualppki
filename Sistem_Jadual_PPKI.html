@@ -276,13 +276,17 @@
      (diaktifkan oleh JS semasa cetak satu guru/kelas pada peranti mudah alih) */
   @media print{
     body[data-rotmob="1"] header{display:none !important}
-    body[data-rotmob="1"] #main{zoom:1 !important}
+    body[data-rotmob="1"] #main{zoom:1.4 !important}
     body[data-rotmob="1"] .wrap{
       transform: rotate(90deg) translateY(-100%);
       transform-origin: top left;
-      width: 276mm; /* menjadi arah 'tinggi' kertas potret */
-      padding: 4mm !important;
+      width: 270mm;   /* menjadi arah 'tinggi' kertas potret */
+      height: 186mm;  /* dikunci supaya PASTI muat 1 halaman */
+      overflow: hidden;
+      padding: 2mm !important;
+      margin: 0 !important;
     }
+    body[data-rotmob="1"] .gridblock{margin:0 !important;padding:0 !important;page-break-after:avoid !important}
   }
 </style>
 </head>
@@ -775,16 +779,31 @@ function printOne(jenis, nama){
     document.body.dataset.tab = jenis==='guru' ? 'guru' : 'kelas';
     document.body.dataset.printone = '1';
     mobileRotOn();
+    // Pemulihan selamat: di telefon window.print() TIDAK menunggu (dialog kekal terbuka),
+    // jadi pulihkan hanya selepas cetakan benar-benar selesai/dibatalkan.
+    let restored=false;
+    const restore=()=>{
+      if(restored) return;
+      restored=true;
+      window.removeEventListener('afterprint', restore);
+      document.removeEventListener('visibilitychange', onVis);
+      mobileRotOff();
+      delete document.body.dataset.printone;
+      ui.tab=prevTab;
+      renderAll();
+    };
+    const onVis=()=>{ if(document.visibilityState==='visible') setTimeout(restore, 400); };
+    window.addEventListener('afterprint', restore);
     setTimeout(()=>{
       try{ window.print(); }
-      catch(err){ toast('Cetakan disekat dalam panel ini — buka laman web/fail HTML untuk mencetak.', true); }
-      finally{
-        setTimeout(()=>{
-          mobileRotOff();
-          delete document.body.dataset.printone;
-          ui.tab=prevTab;
-          renderAll();
-        }, 250);
+      catch(err){ toast('Cetakan disekat dalam panel ini — buka laman web/fail HTML untuk mencetak.', true); restore(); return; }
+      if(!isMobileDevice()){
+        // desktop: print() menyekat sehingga dialog ditutup — selamat pulih terus
+        setTimeout(restore, 250);
+      } else {
+        // telefon: tunggu isyarat selesai; jika tiada, pulih bila pengguna kembali ke halaman
+        document.addEventListener('visibilitychange', onVis);
+        setTimeout(restore, 180000); // jaring keselamatan 3 minit
       }
     }, 120);
   }catch(e){

@@ -449,16 +449,31 @@ function printOne(jenis, nama){
     document.body.dataset.tab = jenis==='guru' ? 'guru' : 'kelas';
     document.body.dataset.printone = '1';
     mobileRotOn();
+    // Pemulihan selamat: di telefon window.print() TIDAK menunggu (dialog kekal terbuka),
+    // jadi pulihkan hanya selepas cetakan benar-benar selesai/dibatalkan.
+    let restored=false;
+    const restore=()=>{
+      if(restored) return;
+      restored=true;
+      window.removeEventListener('afterprint', restore);
+      document.removeEventListener('visibilitychange', onVis);
+      mobileRotOff();
+      delete document.body.dataset.printone;
+      ui.tab=prevTab;
+      renderAll();
+    };
+    const onVis=()=>{ if(document.visibilityState==='visible') setTimeout(restore, 400); };
+    window.addEventListener('afterprint', restore);
     setTimeout(()=>{
       try{ window.print(); }
-      catch(err){ toast('Cetakan disekat dalam panel ini — buka laman web/fail HTML untuk mencetak.', true); }
-      finally{
-        setTimeout(()=>{
-          mobileRotOff();
-          delete document.body.dataset.printone;
-          ui.tab=prevTab;
-          renderAll();
-        }, 250);
+      catch(err){ toast('Cetakan disekat dalam panel ini — buka laman web/fail HTML untuk mencetak.', true); restore(); return; }
+      if(!isMobileDevice()){
+        // desktop: print() menyekat sehingga dialog ditutup — selamat pulih terus
+        setTimeout(restore, 250);
+      } else {
+        // telefon: tunggu isyarat selesai; jika tiada, pulih bila pengguna kembali ke halaman
+        document.addEventListener('visibilitychange', onVis);
+        setTimeout(restore, 180000); // jaring keselamatan 3 minit
       }
     }, 120);
   }catch(e){
