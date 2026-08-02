@@ -326,6 +326,12 @@ function deepCopy(o){return JSON.parse(JSON.stringify(o));}
 
 // ---------- Keadaan ----------
 let state = deepCopy(window.DEFAULT_STATE);
+// Guna semula warna yang pernah disimpan dalam pelayar ini (jika ada & jika storan dibenarkan)
+const COLOR_KEY='jadualppki_colors';
+try{
+  const saved=JSON.parse(localStorage.getItem(COLOR_KEY)||'null');
+  if(saved) for(const t of state.config.teachers) if(saved[t.name]) t.color=saved[t.name];
+}catch(e){/* storan disekat (cth: panel pratonton) — abaikan */}
 const ui = { tab:(typeof window!=='undefined'&&window.innerWidth<640)?'senarai':'kelas', tetapanGuru:0, busy:false, admin:false };
 const ADMIN_TABS = ['editor','tetapan','panduan'];
 const PRESET_COLORS = ['#FF8894','#FFA1B2','#8485B5','#B16F94','#176298','#5CC2C6','#B2DCA1','#7CCCAA','#A05757','#C68483','#E9BFC1','#F6DCDF'];
@@ -906,7 +912,11 @@ function tetapanHTML(cfg){
     <fieldset><legend>Guru</legend>
       <table class="mini"><thead><tr><th>Nama</th><th>Warna</th><th></th></tr></thead><tbody>${teacherRows}</tbody></table>
       <button class="sm" data-act="t-add">+ Tambah guru</button>
+      <span style="width:14px;display:inline-block"></span>
+      <button class="sm" data-act="save-colors">💾 Simpan warna</button>
+      <button class="sm" data-act="clear-colors">↩ Buang simpanan warna</button>
       <div class="hint">Guru bertukar? Tukar sahaja namanya — semua subjek & jadual akan ikut. Guru baharu mengambil alih tugas guru lama: tukar nama guru lama kepada nama baharu.</div>
+      <div class="hint"><b>💾 Simpan warna</b> menyimpan warna dalam pelayar/peranti ini sahaja — warna akan kekal dipakai setiap kali anda buka aplikasi di sini (berfungsi pada fail HTML & laman web; tidak disokong dalam panel pratonton Cowork). Untuk jadikan warna lalai kekal bagi <i>semua</i> pengguna, guna Eksport JSON dan minta Claude membenamkannya.</div>
     </fieldset>
     <fieldset><legend>Slot tidak tersedia (jadual perdana / tugas luar)</legend>
       <div>Guru: ${tsel}</div>
@@ -1226,6 +1236,24 @@ document.addEventListener('click', e=>{
   else if(act==='jana'){
     if(!ui.admin){ toast('Mod admin diperlukan.', true); return; }
     openPinModal('jana','Masukkan PIN untuk jana jadual baharu');
+    return;
+  }
+  else if(act==='save-colors'){
+    try{
+      const m={};
+      for(const g of cfg.teachers) m[g.name]=g.color;
+      localStorage.setItem(COLOR_KEY, JSON.stringify(m));
+      toast('💾 Warna disimpan dalam pelayar ini — akan dipakai secara automatik setiap kali dibuka di sini.');
+    }catch(e){
+      toast('Simpanan pelayar disekat dalam panel ini — buka fail HTML/laman web untuk guna ciri ini, atau guna Eksport JSON.', true);
+    }
+    return;
+  }
+  else if(act==='clear-colors'){
+    try{
+      localStorage.removeItem(COLOR_KEY);
+      toast('Simpanan warna dibuang. Muat semula halaman untuk kembali ke warna lalai.');
+    }catch(e){ toast('Simpanan pelayar disekat dalam panel ini.', true); }
     return;
   }
   else if(act==='cetak'){ try{ window.print(); }catch(err){ toast('Cetakan disekat dalam panel ini — buka fail HTML dalam pelayar untuk mencetak.',true);} return; }
