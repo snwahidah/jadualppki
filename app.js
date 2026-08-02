@@ -530,7 +530,7 @@ function classGridHTML(cfg, grid, cname, editable){
       } else {
         const v=grid[cname][d][p];
         if(v==='PERHIM'){
-          html+=`<td class="perhim${bad}">PERHIMPUNAN</td>`;
+          html+=`<td class="perhim${bad}" title="Perhimpunan">P</td>`;
         } else if(editable){
           const t=v?D.teacherOf[cname][v]:null;
           const bg=t?teacherColor(t):'#fff';
@@ -547,7 +547,7 @@ function classGridHTML(cfg, grid, cname, editable){
   }
   html+=`</tbody></table>`;
   const tamat = cls.periodsPerDay.map((n,d)=>`${cfg.days[d]} ${cfg.periods[n-1].end}`).join(' · ');
-  return `<div class="gridblock"><h3>${esc(cname)} <span class="tahap">(TAHAP ${cls.tahap})</span></h3><div class="tamat">Waktu tamat: ${tamat}</div>${html}</div>`;
+  return `<div class="gridblock"><h3>${esc(cname)} <span class="tahap">(TAHAP ${cls.tahap})</span></h3><div class="tamat">Waktu tamat: ${tamat} &nbsp;·&nbsp; P = Perhimpunan</div>${html}</div>`;
 }
 
 function teacherGridHTML(cfg, grid, tname){
@@ -579,7 +579,7 @@ function teacherGridHTML(cfg, grid, tname){
         const bg=teacherColor(tname);
         html+=`<td class="subcell" style="background:${bg};color:${textColorFor(bg)}"><div class="scode">${esc(cell.v)}</div><div class="tname">${esc(cell.c)}</div></td>`;
       } else if(isAsm){
-        html+=`<td class="perhim">PERHIMPUNAN</td>`;
+        html+=`<td class="perhim" title="Perhimpunan">P</td>`;
       } else if(D.unav[tname]&&D.unav[tname][d][p]){
         const label=noteMap[d+'|'+p]||'TUGAS PERDANA';
         html+=`<td class="perdana"><div>${esc(label)}</div></td>`;
