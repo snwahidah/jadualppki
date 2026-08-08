@@ -86,6 +86,9 @@ const config = {
   perdanaExtra: {
     Hafizah: [],
   },
+  perdanaTimes: {
+    Hafizah: { noRehat: true, periods: { 3: {start:'9.00',end:'9.30'}, 4: {start:'9.30',end:'9.50'} } },
+  },
 };
 
 const state = { config, grid };

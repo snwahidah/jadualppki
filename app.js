@@ -22,6 +22,13 @@ const GHTOK_KEY='jadualppki_ghtoken';
 try{ localStorage.removeItem('jadualppki_colors'); }catch(e){}
 // Muatan global: API pangkalan data (sumber utama). Jika tiada API (fail HTML /
 // GitHub Pages), fallback ke data.json + tema.json statik.
+// Lengkapkan medan konfigurasi baharu yang belum wujud dalam data terbitan lama
+function fillDefaults(cfgLoaded){
+  try{
+    const d=window.DEFAULT_STATE.config;
+    for(const k in d){ if(!(k in cfgLoaded)) cfgLoaded[k]=deepCopy(d[k]); }
+  }catch(e){}
+}
 (async function loadRemote(){
   let changed=false, apiLoaded=false;
   // 1. API pangkalan data (Vercel + Redis) — sumber kebenaran, serta-merta
@@ -30,7 +37,7 @@ try{ localStorage.removeItem('jadualppki_colors'); }catch(e){}
     const isJson=(r.headers.get('content-type')||'').includes('json');
     if(r.ok && isJson){
       const s=await r.json();
-      if(s && s.config && s.grid){ state=s; changed=true; apiLoaded=true; ui.apiOk=true; }
+      if(s && s.config && s.grid){ state=s; fillDefaults(state.config); changed=true; apiLoaded=true; ui.apiOk=true; }
     } else if(r.status===404 && isJson){
       ui.apiOk=true; // API wujud tapi belum ada data — boleh terbit kali pertama
     }
@@ -41,7 +48,7 @@ try{ localStorage.removeItem('jadualppki_colors'); }catch(e){}
       const r=await fetch('data.json?v='+Date.now(), {cache:'no-store'});
       if(r.ok){
         const s=await r.json();
-        if(s && s.config && s.grid && s.config.teachers && s.config.classes){ state=s; changed=true; }
+        if(s && s.config && s.grid && s.config.teachers && s.config.classes){ state=s; fillDefaults(state.config); changed=true; }
       }
     }catch(e){/* fail:// atau panel — abaikan */}
     try{
@@ -505,14 +512,21 @@ function openModal(html){
 }
 function closeModal(){ document.getElementById('modal').hidden=true; }
 
-function periodHeaderCells(cfg, plist){
+function periodHeaderCells(cfg, plist, noRehat){
   const list = plist || cfg.periods;
   let h='';
   for(let p=0;p<list.length;p++){
     h+=`<th class="pcol"><div class="pnum">${p+1}</div><div class="ptime">${list[p].start}<br>–${list[p].end}</div></th>`;
-    if(p===cfg.rehatAfter) h+=`<th class="rehat-col" title="${esc(cfg.rehatLabel)}"></th>`;
+    if(p===cfg.rehatAfter && !noRehat) h+=`<th class="rehat-col" title="${esc(cfg.rehatLabel)}"></th>`;
   }
   return h;
+}
+
+// Waktu khas guru perdana (cth: Hafizah — ikut masa aliran perdana, tanpa rehat PPKI)
+function teacherTimeView(cfg, tname){
+  const o=(cfg.perdanaTimes||{})[tname];
+  const base=cfg.periods.map((p,i)=> (o && o.periods && o.periods[i]) ? o.periods[i] : p);
+  return { base, noRehat: !!(o && o.noRehat) };
 }
 
 function classGridHTML(cfg, grid, cname, editable){
@@ -557,9 +571,10 @@ function teacherGridHTML(cfg, grid, tname){
   for(const [d,ps,pe,label] of notes) for(let p=ps;p<=pe;p++) noteMap[d+'|'+p]=label;
   // panjangkan grid jika guru ada komitmen perdana melepasi grid PPKI (cth: hingga 12.50)
   const hasExtra = notes.some(n=>n[2]>=D.NP);
-  const plist = hasExtra ? cfg.periods.concat(cfg.extraPeriods||[]) : cfg.periods;
+  const tv = teacherTimeView(cfg, tname);
+  const plist = hasExtra ? tv.base.concat(cfg.extraPeriods||[]) : tv.base;
   let total=0;
-  let html=`<table class="jadual"><thead><tr><th class="daycol">HARI / MASA</th>${periodHeaderCells(cfg, plist)}</tr></thead><tbody>`;
+  let html=`<table class="jadual"><thead><tr><th class="daycol">HARI / MASA</th>${periodHeaderCells(cfg, plist, tv.noRehat)}</tr></thead><tbody>`;
   for(let d=0;d<cfg.days.length;d++){
     html+=`<tr><td class="daycol">${esc(cfg.days[d].toUpperCase())}</td>`;
     for(let p=0;p<plist.length;p++){
@@ -586,7 +601,7 @@ function teacherGridHTML(cfg, grid, tname){
       } else {
         html+=`<td class="freecell"></td>`;
       }
-      if(p===cfg.rehatAfter && d===0) html+=`<td class="rehat-cell rehat-merged" rowspan="${cfg.days.length}">R<br>E<br>H<br>A<br>T</td>`;
+      if(p===cfg.rehatAfter && d===0 && !tv.noRehat) html+=`<td class="rehat-cell rehat-merged" rowspan="${cfg.days.length}">R<br>E<br>H<br>A<br>T</td>`;
     }
     html+=`</tr>`;
   }
@@ -643,13 +658,14 @@ function senaraiHTML(cfg, grid){
   const notes=(cfg.perdanaNotes||{})[mode.name]||[];
   const noteMap={};
   for(const [d,ps,pe,label] of notes) for(let p=ps;p<=pe;p++) noteMap[d+'|'+p]=label;
+  const tv = mode.type==='guru' ? teacherTimeView(cfg, mode.name) : {base:cfg.periods, noRehat:false};
 
   let cards='';
   for(let d=0;d<cfg.days.length;d++){
     let rows='', jum=0;
     for(let p=0;p<D.NP;p++){
-      if(p===cfg.rehatAfter+1) rows+=`<div class="lrow lrehat"><span class="ltime"></span><span class="lmain">☕ ${esc(cfg.rehatLabel)}</span></div>`;
-      const time=`${cfg.periods[p].start}–${cfg.periods[p].end}`;
+      if(p===cfg.rehatAfter+1 && !tv.noRehat) rows+=`<div class="lrow lrehat"><span class="ltime"></span><span class="lmain">☕ ${esc(cfg.rehatLabel)}</span></div>`;
+      const time=`${tv.base[p].start}–${tv.base[p].end}`;
       const isAsm = d===cfg.assembly.day && p===cfg.assembly.period;
       if(mode.type==='kelas'){
         if(!D.inSession(mode.name,d,p)) continue;
