@@ -27,6 +27,13 @@ function fillDefaults(cfgLoaded){
   try{
     const d=window.DEFAULT_STATE.config;
     for(const k in d){ if(!(k in cfgLoaded)) cfgLoaded[k]=deepCopy(d[k]); }
+    // medan per-guru baharu (cth: jenis) — ambil dari lalai ikut nama
+    for(const t of (cfgLoaded.teachers||[])){
+      if(!t.jenis){
+        const dt=(d.teachers||[]).find(x=>x.name===t.name);
+        t.jenis = dt && dt.jenis ? dt.jenis : 'ppki';
+      }
+    }
   }catch(e){}
 }
 (async function loadRemote(){
@@ -540,7 +547,9 @@ function periodHeaderCells(cfg, plist, noRehat){
 
 // Waktu khas guru perdana (cth: Hafizah — ikut masa aliran perdana, tanpa rehat PPKI)
 function teacherTimeView(cfg, tname){
-  const o=(cfg.perdanaTimes||{})[tname];
+  const t=(cfg.teachers||[]).find(x=>x.name===tname);
+  const isPerdana = t && t.jenis==='perdana';
+  const o = isPerdana ? (((cfg.perdanaTimes||{})[tname]) || cfg.perdanaTimeTemplate || null) : null;
   const base=cfg.periods.map((p,i)=> (o && o.periods && o.periods[i]) ? o.periods[i] : p);
   return { base, noRehat: !!(o && o.noRehat) };
 }
@@ -747,6 +756,7 @@ function tetapanHTML(cfg){
     <tr>
       <td><input data-act="t-name" data-i="${i}" value="${esc(t.name)}"></td>
       <td><input type="color" data-act="t-color" data-i="${i}" value="${esc(t.color)}"> <input class="w80 hexin" data-act="t-colorhex" data-i="${i}" value="${esc(t.color)}" maxlength="7" spellcheck="false" placeholder="#AABBCC" title="Tampal kod warna hex di sini"> <button class="ddbtn" data-act="pick-preset" data-i="${i}" title="Pilih dari palet pratetap">🎨</button></td>
+      <td><button class="ddbtn ${t.jenis==='perdana'?'sel':''}" data-act="t-jenis" data-i="${i}" title="Guru Perdana: jadual dipapar ikut masa aliran perdana (tanpa REHAT PPKI, waktu 4 = 9.00-9.30, waktu 5 = 9.30-9.50)">${t.jenis==='perdana'?'Perdana':'PPKI'}</button></td>
       <td><button class="sm danger" data-act="t-del" data-i="${i}">Buang</button></td>
     </tr>`).join('');
 
@@ -780,11 +790,19 @@ function tetapanHTML(cfg){
   let unavGrid='';
   if(tn){
     const D=derived(cfg);
-    unavGrid=`<table class="mini unav"><thead><tr><th></th>${cfg.periods.map((p,i)=>`<th>${i+1}<br><small>${p.start}</small></th>`).join('')}</tr></thead><tbody>`;
+    // Guru perdana (cth: Hafizah): papar ikut masa perdana beliau, termasuk waktu 10-11
+    const tvU = teacherTimeView(cfg, tn);
+    const notesU = (cfg.perdanaNotes||{})[tn]||[];
+    const hasExtraU = notesU.some(n=>n[2]>=cfg.periods.length);
+    const plistU = hasExtraU ? tvU.base.concat(cfg.extraPeriods||[]) : tvU.base;
+    const noteMapU = {};
+    for(const [d2,ps2,pe2] of notesU) for(let p2=ps2;p2<=pe2;p2++) noteMapU[d2+'|'+p2]=true;
+    const rawUn = cfg.unavailable[tn]||[];
+    unavGrid=`<table class="mini unav"><thead><tr><th></th>${plistU.map((p,i)=>`<th>${i+1}<br><small>${p.start}</small></th>`).join('')}</tr></thead><tbody>`;
     for(let d=0;d<cfg.days.length;d++){
       unavGrid+=`<tr><td>${esc(cfg.days[d])}</td>`;
-      for(let p=0;p<cfg.periods.length;p++){
-        const on=D.unav[tn]&&D.unav[tn][d][p];
+      for(let p=0;p<plistU.length;p++){
+        const on=(rawUn[d]||[]).includes(p) || noteMapU[d+'|'+p];
         unavGrid+=`<td class="uv ${on?'on':''}" data-act="uv" data-d="${d}" data-p="${p}">${on?'✕':''}</td>`;
       }
       unavGrid+=`</tr>`;
@@ -802,11 +820,12 @@ function tetapanHTML(cfg){
       <label>Had waktu guru sehari <input class="w60" type="number" min="1" max="12" data-act="m-maxday" value="${cfg.maxPerDay}"></label>
     </fieldset>
     <fieldset><legend>Guru</legend>
-      <table class="mini"><thead><tr><th>Nama</th><th>Warna</th><th></th></tr></thead><tbody>${teacherRows}</tbody></table>
+      <table class="mini"><thead><tr><th>Nama</th><th>Warna</th><th>Jenis</th><th></th></tr></thead><tbody>${teacherRows}</tbody></table>
       <button class="sm" data-act="t-add">+ Tambah guru</button>
       <span style="width:14px;display:inline-block"></span>
       <button class="sm" data-act="save-colors-global" style="font-weight:700">🌐 Terbit ke laman (SEMUA pengguna)</button>
       <div class="hint">Guru bertukar? Tukar sahaja namanya — semua subjek & jadual akan ikut. Guru baharu mengambil alih tugas guru lama: tukar nama guru lama kepada nama baharu.</div>
+      <div class="hint"><b>Jenis</b>: klik untuk togol PPKI ⇄ Perdana. Guru <b>Perdana</b> dipaparkan ikut masa aliran perdana — tanpa lajur REHAT PPKI, waktu 4 = 9.00–9.30, waktu 5 = 9.30–9.50 (grid slot tidak tersedia di bawah turut ikut).</div>
       <div class="hint"><b>🌐 Terbit ke laman</b> menerbitkan KESELURUHAN keadaan semasa (jadual, tetapan & warna) supaya semua pengguna mendapat versi terkini serta-merta.</div>
     </fieldset>
     <fieldset><legend>Slot tidak tersedia (jadual perdana / tugas luar)</legend>
@@ -991,6 +1010,11 @@ document.addEventListener('click', e=>{
     closeModal(); renderAll(); return;
   }
   if(act==='uv-guru-chip'){ ui.tetapanGuru=+t.dataset.i; renderAll(); return; }
+  if(act==='t-jenis'){
+    const g=cfg.teachers[+t.dataset.i];
+    if(g){ g.jenis = g.jenis==='perdana' ? 'ppki' : 'perdana'; markDirty(); renderAll(); }
+    return;
+  }
   if(act==='list-type'){ ui.list=ui.list||{}; ui.list.type=t.dataset.v; renderAll(); return; }
   if(act==='list-name'){ ui.list=ui.list||{type:'guru'}; ui.list.name=t.dataset.v; renderAll(); return; }
   if(act==='pick-preset'){

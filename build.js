@@ -22,11 +22,11 @@ const config = {
   adminPin: '191989',
   repo: {owner:'snwahidah', name:'jadualppki', temaPath:'tema.json', dataPath:'data.json'},
   teachers: [
-    {name:'Fazlina', color:'#AFD8F5'},
-    {name:'Mukmin',  color:'#FAF0A8'},
-    {name:'Auni',    color:'#B5E6C8'},
-    {name:'Wahidah', color:'#F6B3B6'},
-    {name:'Hafizah', color:'#EFC9EA'},
+    {name:'Fazlina', color:'#AFD8F5', jenis:'ppki'},
+    {name:'Mukmin',  color:'#FAF0A8', jenis:'ppki'},
+    {name:'Auni',    color:'#B5E6C8', jenis:'ppki'},
+    {name:'Wahidah', color:'#F6B3B6', jenis:'ppki'},
+    {name:'Hafizah', color:'#EFC9EA', jenis:'perdana'},
   ],
   classes: [
     {name:'1 KRISTAL', tahap:1, periodsPerDay:[8,8,8,8,7]},
@@ -72,7 +72,7 @@ const config = {
     ],
   },
   unavailable: {
-    Hafizah: [[0,3,4],[0,1,3,4,7,8],[3,4,5,6,7,8],[0,1,2,3,7,8],[0,1,6,7]],
+    Hafizah: [[0,3,4,9,10],[0,1,3,4,7,8,9,10],[3,4,5,6,7,8],[0,1,2,3,7,8],[0,1,6,7]],
   },
   perdanaNotes: {
     Hafizah: [
@@ -89,6 +89,7 @@ const config = {
   perdanaTimes: {
     Hafizah: { noRehat: true, periods: { 3: {start:'9.00',end:'9.30'}, 4: {start:'9.30',end:'9.50'} } },
   },
+  perdanaTimeTemplate: { noRehat: true, periods: { 3: {start:'9.00',end:'9.30'}, 4: {start:'9.30',end:'9.50'} } },
 };
 
 const state = { config, grid };
