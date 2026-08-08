@@ -64,7 +64,20 @@ function fillDefaults(cfgLoaded){
   }
   if(changed) renderAll();
 })();
-const ui = { tab:'guru', tetapanGuru:0, busy:false, admin:false };
+const ui = { tab:'guru', tetapanGuru:0, busy:false, admin:false, dirty:false };
+function markDirty(){
+  ui.dirty=true;
+  const b=document.getElementById('dirty-btn');
+  if(b) b.hidden=false;
+}
+function clearDirty(){
+  ui.dirty=false;
+  const b=document.getElementById('dirty-btn');
+  if(b) b.hidden=true;
+}
+if(typeof window!=='undefined') window.addEventListener('beforeunload', e=>{
+  if(ui.dirty && ui.admin){ e.preventDefault(); e.returnValue=''; }
+});
 const ADMIN_TABS = ['editor','tetapan','panduan'];
 const PRESET_COLORS = ['#FF8894','#FFA1B2','#8485B5','#B16F94','#176298','#5CC2C6','#B2DCA1','#7CCCAA','#A05757','#C68483','#E9BFC1','#F6DCDF'];
 function adminPin(){ return String(state.config.adminPin || '191989'); }
@@ -345,6 +358,7 @@ async function janaJadual(){
       catch(e){ toast(typeof e==='string'?e:String(e), true); break; }
       if(g){
         state.grid=g;
+        markDirty();
         if(status) status.textContent='';
         toast('Jadual baharu berjaya dijana — tiada pertindihan.');
         renderAll();
@@ -384,6 +398,7 @@ async function publishGlobal(){
         body: JSON.stringify({pin, state:{config:state.config, grid:state.grid}})});
       if(r.ok){
         closeModal();
+        clearDirty();
         toast('🌐 Diterbitkan SERTA-MERTA! Semua pengguna mendapat versi terkini sekarang (muat semula halaman mereka).');
       } else if(r.status===401){
         if(pinI){pinI.value='';pinI.focus();}
@@ -418,6 +433,7 @@ async function publishGlobal(){
     const r2=await ghPut(tok, repo.temaPath||'tema.json', JSON.stringify({updated:new Date().toISOString(), colors}, null, 1), 'Kemas kini warna tema (dari aplikasi)');
     if(r1.ok && r2.ok){
       closeModal();
+      clearDirty();
       toast('🌐 Diterbitkan! Semua pengguna laman akan mendapat jadual, tetapan & warna terkini dalam 1–2 minit.');
     } else {
       const bad = r1.ok ? r2 : r1;
@@ -840,6 +856,8 @@ function renderAll(){
   document.body.dataset.admin = ui.admin ? '1' : '0';
   const ab=document.getElementById('admin-btn');
   if(ab){ ab.textContent = ui.admin ? '🔓 Admin' : '🔒 Admin'; ab.classList.toggle('on', ui.admin); }
+  const db=document.getElementById('dirty-btn');
+  if(db) db.hidden = !ui.dirty;
 
   const main=document.getElementById('main');
   document.body.dataset.tab=ui.tab;
@@ -913,6 +931,7 @@ document.addEventListener('change', e=>{
     state.grid[nw]=state.grid[old]; delete state.grid[old];
   }
   else if(act==='c-tahap') cfg.classes[+t.dataset.c].tahap=+t.value||1;
+  markDirty();
   renderAll();
 });
 
@@ -940,7 +959,7 @@ document.addEventListener('click', e=>{
   }
   if(act==='cell-pick'){
     const {c,d,p}=ui.pickCell||{};
-    if(c!==undefined){ state.grid[c][d][p]=t.dataset.v||null; }
+    if(c!==undefined){ state.grid[c][d][p]=t.dataset.v||null; markDirty(); }
     closeModal(); renderAll(); return;
   }
   if(act==='pick-teacher'){
@@ -951,7 +970,7 @@ document.addEventListener('click', e=>{
   }
   if(act==='teacher-pick'){
     const {ci,si}=ui.pickSubj||{};
-    if(ci!==undefined) cfg.curriculum[cfg.classes[ci].name][si].teacher=t.dataset.name;
+    if(ci!==undefined){ cfg.curriculum[cfg.classes[ci].name][si].teacher=t.dataset.name; markDirty(); }
     closeModal(); renderAll(); return;
   }
   if(act==='pick-tamat'){
@@ -967,6 +986,7 @@ document.addEventListener('click', e=>{
       cfg.classes[ci].periodsPerDay[d]=n;
       const cname=cfg.classes[ci].name;
       for(let p=n;p<cfg.periods.length;p++) state.grid[cname][d][p]=null;
+      markDirty();
     }
     closeModal(); renderAll(); return;
   }
@@ -982,7 +1002,7 @@ document.addEventListener('click', e=>{
     return;
   }
   if(act==='preset-pick'){
-    if(ui.presetFor!==undefined && cfg.teachers[ui.presetFor]) cfg.teachers[ui.presetFor].color=t.dataset.v.toUpperCase();
+    if(ui.presetFor!==undefined && cfg.teachers[ui.presetFor]){ cfg.teachers[ui.presetFor].color=t.dataset.v.toUpperCase(); markDirty(); }
     closeModal(); renderAll(); return;
   }
   if(act==='pick-cons'){
@@ -1003,6 +1023,7 @@ document.addEventListener('click', e=>{
       if(ix>=0) s.noDays.splice(ix,1); else s.noDays.push(d);
       s.noDays.sort();
     }
+    markDirty();
     openModal(consModalHTML());
     renderAll();
     return;
@@ -1010,7 +1031,7 @@ document.addEventListener('click', e=>{
   if(act==='c-del-yes'){
     const name=t.dataset.name;
     const i=cfg.classes.findIndex(x=>x.name===name);
-    if(i>=0){ cfg.classes.splice(i,1); delete cfg.curriculum[name]; delete state.grid[name]; }
+    if(i>=0){ cfg.classes.splice(i,1); delete cfg.curriculum[name]; delete state.grid[name]; markDirty(); }
     closeModal(); renderAll(); return;
   }
   if(act==='eksport-dl'){
@@ -1036,6 +1057,8 @@ document.addEventListener('click', e=>{
       const s=JSON.parse(document.getElementById('json-ta').value);
       if(!s.config||!s.grid||!s.config.teachers||!s.config.classes) throw 'format';
       state=s;
+      fillDefaults(state.config);
+      markDirty();
       closeModal();
       toast('Data simpanan dibuka.');
       renderAll();
@@ -1171,6 +1194,7 @@ document.addEventListener('click', e=>{
     return;
   }
   else return;
+  markDirty();
   renderAll();
 });
 
@@ -1196,6 +1220,8 @@ document.getElementById('importfile').addEventListener('change', e=>{
       const s=JSON.parse(r.result);
       if(!s.config||!s.grid||!s.config.teachers||!s.config.classes) throw 'format';
       state=s;
+      fillDefaults(state.config);
+      markDirty();
       closeModal();
       toast('Fail simpanan dibuka.');
       renderAll();

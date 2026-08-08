@@ -65,6 +65,7 @@
     backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:all .3s var(--ease)}
   .pill.ok{background:rgba(209,250,229,.75);color:#065f46}
   .pill.err{background:rgba(254,226,226,.8);color:#b91c1c;animation:pulse 1.6s ease-in-out infinite}
+  #dirty-btn{animation:pulse 1.8s ease-in-out infinite}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.25)}50%{box-shadow:0 0 0 7px rgba(220,38,38,0)}}
   #jana-status{font-size:12.5px;color:var(--soft)}
 
@@ -337,6 +338,7 @@
     <button class="act adminonly" data-act="eksport">⬇ Eksport</button>
     <button class="act adminonly" data-act="import">⬆ Import</button>
     <button class="act" data-act="admin-toggle" id="admin-btn">🔒 Admin</button>
+    <button class="act adminonly" data-act="save-colors-global" id="dirty-btn" hidden style="background:linear-gradient(135deg,#d97706,#b45309);color:#fff;border:none;font-weight:700">💾 Simpan perubahan</button>
     <span id="status-pill" class="pill ok">…</span>
     <span id="jana-status"></span>
   </div>
