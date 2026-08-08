@@ -562,6 +562,23 @@ function removeNoteAt(cfg, tname, d, p){
   cfg.perdanaNotes[tname]=out;
 }
 
+// Modal nama/buang untuk slot tidak tersedia (✕) — label dipaparkan dalam jadual guru
+function openUvModal(tn, d, c2, isPerd, curLabel){
+  ui.uvEdit={tn, d, c2, perd:isPerd?1:0};
+  const cfg=state.config;
+  const masa = isPerd ? perdanaViewOf(cfg).cols[c2] : cfg.periods[c2];
+  const masaTxt = masa ? `${masa.start}–${masa.end}` : '';
+  openModal(`<h4>Slot ✕ — ${esc(cfg.days[d])} ${esc(masaTxt)}</h4>
+    <p style="font-size:12.5px;margin:6px 0">Beri nama pada slot ini (dipaparkan dalam jadual guru, cth: <i>PI 6 BES</i>). Kosongkan untuk ✕ biasa tanpa nama.</p>
+    <input id="uv-label" class="wide" maxlength="60" value="${esc(curLabel||'')}" placeholder="cth: PI 6 BES (9.00–10.00)">
+    <div class="modal-foot">
+      <button class="act primary" data-act="uv-save">💾 Simpan nama</button>
+      <button class="act danger2" data-act="uv-unmark">Buang tanda ✕</button>
+      <button class="act" data-act="modal-close">Batal</button>
+    </div>`);
+  setTimeout(()=>{ const i=document.getElementById('uv-label'); if(i){ i.focus(); i.select(); } }, 60);
+}
+
 function isPerdanaTeacher(cfg, tname){
   const t=(cfg.teachers||[]).find(x=>x.name===tname);
   return !!(t && t.jenis==='perdana');
@@ -584,7 +601,7 @@ function teacherGridPerdanaHTML(cfg, grid, tname){
   const noteMap={};
   for(const [d,cs,ce,label] of notes) for(let c2=cs;c2<=ce;c2++) noteMap[d+'|'+c2]=label;
   let total=0;
-  let html=`<table class="jadual"><thead><tr><th class="daycol">HARI / MASA</th>${pv.cols.map((p,i)=>`<th class="pcol"><div class="pnum">${i+1}</div><div class="ptime">${esc(p.start)}<br>–${esc(p.end)}</div></th>`).join('')}</tr></thead><tbody>`;
+  let html=`<table class="jadual pgrid"><thead><tr><th class="daycol">HARI / MASA</th>${pv.cols.map((p,i)=>`<th class="pcol"><div class="pnum">${i+1}</div><div class="ptime">${esc(p.start)}<br>–${esc(p.end)}</div></th>`).join('')}</tr></thead><tbody>`;
   for(let d=0;d<cfg.days.length;d++){
     html+=`<tr><td class="daycol">${esc(cfg.days[d].toUpperCase())}</td>`;
     for(let c2=0;c2<pv.cols.length;c2++){
@@ -893,7 +910,7 @@ function tetapanHTML(cfg){
     const rawUn = cfg.unavailable[tn]||[];
     const notesU = (cfg.perdanaNotes||{})[tn]||[];
     const noteMapU = {};
-    for(const [d2,ps2,pe2] of notesU) for(let p2=ps2;p2<=pe2;p2++) noteMapU[d2+'|'+p2]=true;
+    for(const [d2,ps2,pe2,lab2] of notesU) for(let p2=ps2;p2<=pe2;p2++) noteMapU[d2+'|'+p2]=lab2||true;
     if(isPerdanaTeacher(cfg, tn)){
       // Guru perdana: 12 lajur masa perdana penuh
       const pvT=perdanaViewOf(cfg);
@@ -903,8 +920,10 @@ function tetapanHTML(cfg){
         for(let c2=0;c2<pvT.cols.length;c2++){
           const idx=pvT.idxOfCol[c2];
           const idxTog=(pvT.idxToggleOfCol[c2]!==undefined)?pvT.idxToggleOfCol[c2]:idx;
-          const on=(idxTog!==undefined && (rawUn[d]||[]).includes(idxTog)) || noteMapU[d+'|'+c2];
-          unavGrid+=`<td class="uv ${on?'on':''}" data-act="uv" data-d="${d}" data-p="${c2}" data-perdana="1">${on?'✕':''}</td>`;
+          const lblU=noteMapU[d+'|'+c2];
+          const on=(idxTog!==undefined && (rawUn[d]||[]).includes(idxTog)) || lblU;
+          const tt=(typeof lblU==='string' && lblU) ? ` title="${esc(lblU)}"` : '';
+          unavGrid+=`<td class="uv ${on?'on':''}${lblU?' named':''}" data-act="uv" data-d="${d}" data-p="${c2}" data-perdana="1"${tt}>${on?'✕':''}</td>`;
         }
         unavGrid+=`</tr>`;
       }
@@ -920,7 +939,7 @@ function tetapanHTML(cfg){
       }
     }
     unavGrid+=`</tbody></table>
-    <div class="hint">Klik sel untuk tanda slot guru ini TIDAK tersedia untuk PPKI (cth: mengajar aliran perdana). ✕ = tidak tersedia.</div>`;
+    <div class="hint">Klik sel kosong untuk tanda ✕ (tidak tersedia untuk PPKI). Klik sel bertanda ✕ untuk <b>beri nama</b> (cth: PI 6 BES — dipaparkan dalam jadual guru) atau buang tanda.</div>`;
   }
 
   return `
@@ -1219,26 +1238,53 @@ document.addEventListener('click', e=>{
     const d=+t.dataset.d;
     if(!cfg.unavailable[tn]) cfg.unavailable[tn]=cfg.days.map(()=>[]);
     const arr=cfg.unavailable[tn][d];
-    if(t.dataset.perdana==='1'){
-      // grid perdana: data-p ialah KOLUM (0..11); nota dalam ruang kolum, solver dalam ruang idx PPKI
-      const c2=+t.dataset.p;
+    const isPerd=t.dataset.perdana==='1';
+    const c2=+t.dataset.p; // perdana: KOLUM (0..11); PPKI: idx waktu
+    const note=((cfg.perdanaNotes||{})[tn]||[]).find(n=>n[0]===d && c2>=n[1] && c2<=n[2]);
+    if(isPerd){
       const pvC=perdanaViewOf(cfg);
       const idx=pvC.idxOfCol[c2];
       const idxTog=(pvC.idxToggleOfCol[c2]!==undefined)?pvC.idxToggleOfCol[c2]:idx;
-      const hasNote=((cfg.perdanaNotes||{})[tn]||[]).some(n=>n[0]===d && c2>=n[1] && c2<=n[2]);
-      const marked=(idxTog!==undefined && arr.includes(idxTog)) || hasNote;
-      if(marked){
-        if(idx!==undefined){ const ix2=arr.indexOf(idx); if(ix2>=0) arr.splice(ix2,1); }
-        if(idxTog!==undefined && idxTog!==idx){ const ix3=arr.indexOf(idxTog); if(ix3>=0) arr.splice(ix3,1); }
-        if(hasNote) removeNoteAt(cfg, tn, d, c2);
-      } else if(idxTog!==undefined && !arr.includes(idxTog)){
-        arr.push(idxTog);
-      }
+      const marked=(idxTog!==undefined && arr.includes(idxTog)) || !!note;
+      if(marked){ openUvModal(tn,d,c2,true,note?(note[3]||''):''); return; }
+      if(idxTog!==undefined && !arr.includes(idxTog)) arr.push(idxTog);
     } else {
-      const p=+t.dataset.p;
-      const ix=arr.indexOf(p);
-      if(ix>=0) arr.splice(ix,1); else arr.push(p);
+      const marked=arr.includes(c2) || !!note;
+      if(marked){ openUvModal(tn,d,c2,false,note?(note[3]||''):''); return; }
+      arr.push(c2);
     }
+  }
+  else if(act==='uv-save'){
+    const e2=ui.uvEdit; if(!e2) return;
+    const label=((document.getElementById('uv-label')||{}).value||'').trim();
+    if(!cfg.perdanaNotes) cfg.perdanaNotes={};
+    if(!cfg.perdanaNotes[e2.tn]) cfg.perdanaNotes[e2.tn]=[];
+    const nlist=cfg.perdanaNotes[e2.tn];
+    const nx=nlist.find(n=>n[0]===e2.d && e2.c2>=n[1] && e2.c2<=n[2]);
+    if(nx){ if(label) nx[3]=label; else removeNoteAt(cfg,e2.tn,e2.d,e2.c2); }
+    else if(label) nlist.push([e2.d,e2.c2,e2.c2,label]);
+    // pastikan slot kekal ditanda tidak tersedia untuk penjana jadual
+    if(!cfg.unavailable[e2.tn]) cfg.unavailable[e2.tn]=cfg.days.map(()=>[]);
+    const arrS=cfg.unavailable[e2.tn][e2.d];
+    let togS=e2.c2;
+    if(e2.perd){ const pvS=perdanaViewOf(cfg); togS=(pvS.idxToggleOfCol[e2.c2]!==undefined)?pvS.idxToggleOfCol[e2.c2]:pvS.idxOfCol[e2.c2]; }
+    if(togS!==undefined && !arrS.includes(togS)) arrS.push(togS);
+    ui.uvEdit=null; closeModal();
+  }
+  else if(act==='uv-unmark'){
+    const e2=ui.uvEdit; if(!e2) return;
+    const arrU=(cfg.unavailable[e2.tn]||[])[e2.d]||[];
+    if(e2.perd){
+      const pvU=perdanaViewOf(cfg);
+      const idxU=pvU.idxOfCol[e2.c2];
+      const togU=(pvU.idxToggleOfCol[e2.c2]!==undefined)?pvU.idxToggleOfCol[e2.c2]:idxU;
+      if(idxU!==undefined){ const i2=arrU.indexOf(idxU); if(i2>=0) arrU.splice(i2,1); }
+      if(togU!==undefined && togU!==idxU){ const i3=arrU.indexOf(togU); if(i3>=0) arrU.splice(i3,1); }
+    } else {
+      const i2=arrU.indexOf(e2.c2); if(i2>=0) arrU.splice(i2,1);
+    }
+    removeNoteAt(cfg,e2.tn,e2.d,e2.c2);
+    ui.uvEdit=null; closeModal();
   }
   else if(act==='s-add'){
     const cname=cfg.classes[+t.dataset.c].name;
@@ -1361,6 +1407,10 @@ document.addEventListener('keydown', e=>{
   } else if(document.getElementById('pub-pin')){
     e.preventDefault();
     const b=document.querySelector('[data-act="global-colors-go"]');
+    if(b) b.click();
+  } else if(document.getElementById('uv-label')){
+    e.preventDefault();
+    const b=document.querySelector('[data-act="uv-save"]');
     if(b) b.click();
   }
 });
