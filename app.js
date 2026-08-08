@@ -26,7 +26,10 @@ try{ localStorage.removeItem('jadualppki_colors'); }catch(e){}
 function fillDefaults(cfgLoaded){
   try{
     const d=window.DEFAULT_STATE.config;
+    const hadPV=('perdanaView' in cfgLoaded);
     for(const k in d){ if(!(k in cfgLoaded)) cfgLoaded[k]=deepCopy(d[k]); }
+    if(!hadPV && d.perdanaNotes) cfgLoaded.perdanaNotes=deepCopy(d.perdanaNotes);
+    if(!hadPV && d.unavailable) cfgLoaded.unavailable=deepCopy(d.unavailable);
     // medan per-guru baharu (cth: jenis) — ambil dari lalai ikut nama
     for(const t of (cfgLoaded.teachers||[])){
       if(!t.jenis){
@@ -559,6 +562,60 @@ function removeNoteAt(cfg, tname, d, p){
   cfg.perdanaNotes[tname]=out;
 }
 
+function isPerdanaTeacher(cfg, tname){
+  const t=(cfg.teachers||[]).find(x=>x.name===tname);
+  return !!(t && t.jenis==='perdana');
+}
+function perdanaViewOf(cfg){
+  const pv=cfg.perdanaView||{};
+  const cols=pv.cols||cfg.periods;
+  const colOfIdx=pv.colOfIdx||cols.map((_,i)=>i);
+  const idxOfCol={};
+  colOfIdx.forEach((c2,i2)=>{ idxOfCol[c2]=i2; });
+  const idxToggleOfCol=pv.idxToggleOfCol||{};
+  return {cols, colOfIdx, idxOfCol, idxToggleOfCol};
+}
+
+// Grid guru PERDANA: 12 lajur masa perdana penuh, tanpa rehat PPKI
+function teacherGridPerdanaHTML(cfg, grid, tname){
+  const D=derived(cfg);
+  const pv=perdanaViewOf(cfg);
+  const notes=(cfg.perdanaNotes||{})[tname]||[];
+  const noteMap={};
+  for(const [d,cs,ce,label] of notes) for(let c2=cs;c2<=ce;c2++) noteMap[d+'|'+c2]=label;
+  let total=0;
+  let html=`<table class="jadual"><thead><tr><th class="daycol">HARI / MASA</th>${pv.cols.map((p,i)=>`<th class="pcol"><div class="pnum">${i+1}</div><div class="ptime">${esc(p.start)}<br>–${esc(p.end)}</div></th>`).join('')}</tr></thead><tbody>`;
+  for(let d=0;d<cfg.days.length;d++){
+    html+=`<tr><td class="daycol">${esc(cfg.days[d].toUpperCase())}</td>`;
+    for(let c2=0;c2<pv.cols.length;c2++){
+      const idx=pv.idxOfCol[c2];
+      let cell=null;
+      if(idx!==undefined && idx<D.NP){
+        for(const cl of D.classNames){
+          const v=grid[cl]&&grid[cl][d]?grid[cl][d][idx]:null;
+          if(v&&v!=='PERHIM'&&D.inSession(cl,d,idx)&&D.teacherOf[cl][v]===tname){cell={cl,v};break;}
+        }
+      }
+      const isAsm = idx===cfg.assembly.period && d===cfg.assembly.day;
+      if(cell){
+        total++;
+        const bg=teacherColor(tname);
+        html+=`<td class="subcell" style="background:${bg};color:${textColorFor(bg)}"><div class="scode">${esc(cell.v)}</div><div class="tname">${esc(cell.cl)}</div></td>`;
+      } else if(isAsm && idx!==undefined){
+        html+=`<td class="perhim" title="Perhimpunan">P</td>`;
+      } else if(noteMap[d+'|'+c2]){
+        html+=`<td class="perdana"><div>${esc(noteMap[d+'|'+c2])}</div></td>`;
+      } else {
+        html+=`<td class="freecell"></td>`;
+      }
+    }
+    html+=`</tr>`;
+  }
+  html+=`</tbody></table>`;
+  const bebanInfo = ui.admin ? ` <span class="tahap">— ${total} waktu PPKI + 1 perhimpunan = ${total+1}</span>` : '';
+  return `<div class="gridblock"><h3><span class="dot" style="background:${teacherColor(tname)}"></span> ${esc(tname).toUpperCase()}${bebanInfo}</h3>${html}</div>`;
+}
+
 // Waktu khas guru perdana (cth: Hafizah — ikut masa aliran perdana, tanpa rehat PPKI)
 function teacherTimeView(cfg, tname){
   const t=(cfg.teachers||[]).find(x=>x.name===tname);
@@ -604,6 +661,7 @@ function classGridHTML(cfg, grid, cname, editable){
 }
 
 function teacherGridHTML(cfg, grid, tname){
+  if(isPerdanaTeacher(cfg, tname)) return teacherGridPerdanaHTML(cfg, grid, tname);
   const D=derived(cfg);
   const notes=(cfg.perdanaNotes||{})[tname]||[];
   const noteMap={};
@@ -699,9 +757,37 @@ function senaraiHTML(cfg, grid){
   for(const [d,ps,pe,label] of notes) for(let p=ps;p<=pe;p++) noteMap[d+'|'+p]=label;
   const tv = mode.type==='guru' ? teacherTimeView(cfg, mode.name) : {base:cfg.periods, noRehat:false};
 
+  const perdanaMode = mode.type==='guru' && isPerdanaTeacher(cfg, mode.name);
+  const pvS = perdanaMode ? perdanaViewOf(cfg) : null;
   let cards='';
   for(let d=0;d<cfg.days.length;d++){
     let rows='', jum=0;
+    if(perdanaMode){
+      for(let c2=0;c2<pvS.cols.length;c2++){
+        const time=`${pvS.cols[c2].start}–${pvS.cols[c2].end}`;
+        const idx=pvS.idxOfCol[c2];
+        let cell=null;
+        if(idx!==undefined && idx<D.NP){
+          for(const c of D.classNames){
+            const v=grid[c]&&grid[c][d]?grid[c][d][idx]:null;
+            if(v&&v!=='PERHIM'&&D.inSession(c,d,idx)&&D.teacherOf[c][v]===mode.name){cell={c,v};break;}
+          }
+        }
+        const isAsm = idx===cfg.assembly.period && d===cfg.assembly.day;
+        if(cell){
+          const s2=(cfg.curriculum[cell.c]||[]).find(x=>x.code===cell.v);
+          const bg=teacherColor(mode.name);
+          rows+=`<div class="lrow"><span class="ltime">${time}</span><span class="lchip" style="background:${bg};color:${textColorFor(bg)}">${esc(cell.v)}</span><span class="lmain">${s2?esc(s2.name):''} <small>· ${esc(cell.c)}</small></span></div>`;
+          jum++;
+        } else if(isAsm && idx!==undefined){
+          rows+=`<div class="lrow"><span class="ltime">${time}</span><span class="lchip" style="background:#f5f0dc">✦</span><span class="lmain">Perhimpunan</span></div>`;
+        } else if(noteMap[d+'|'+c2]){
+          rows+=`<div class="lrow lperdana"><span class="ltime">${time}</span><span class="lchip" style="background:#4a4a58;color:#fff">P</span><span class="lmain">${esc(noteMap[d+'|'+c2])}</span></div>`;
+        }
+      }
+      cards+=`<div class="daycard"><h4>${esc(cfg.days[d].toUpperCase())}${ui.admin?` <span class="tahap">— ${jum} waktu</span>`:''}</h4>${rows||'<div class="hint">Tiada jadual</div>'}</div>`;
+      continue;
+    }
     for(let p=0;p<D.NP;p++){
       if(p===cfg.rehatAfter+1 && !tv.noRehat) rows+=`<div class="lrow lrehat"><span class="ltime"></span><span class="lmain">☕ ${esc(cfg.rehatLabel)}</span></div>`;
       const time=`${tv.base[p].start}–${tv.base[p].end}`;
@@ -804,22 +890,34 @@ function tetapanHTML(cfg){
   let unavGrid='';
   if(tn){
     const D=derived(cfg);
-    // Guru perdana (cth: Hafizah): papar ikut masa perdana beliau, termasuk waktu 10-11
-    const tvU = teacherTimeView(cfg, tn);
+    const rawUn = cfg.unavailable[tn]||[];
     const notesU = (cfg.perdanaNotes||{})[tn]||[];
-    const hasExtraU = notesU.some(n=>n[2]>=cfg.periods.length);
-    const plistU = hasExtraU ? tvU.base.concat(cfg.extraPeriods||[]) : tvU.base;
     const noteMapU = {};
     for(const [d2,ps2,pe2] of notesU) for(let p2=ps2;p2<=pe2;p2++) noteMapU[d2+'|'+p2]=true;
-    const rawUn = cfg.unavailable[tn]||[];
-    unavGrid=`<table class="mini unav"><thead><tr><th></th>${plistU.map((p,i)=>`<th>${i+1}<br><small>${p.start}</small></th>`).join('')}</tr></thead><tbody>`;
-    for(let d=0;d<cfg.days.length;d++){
-      unavGrid+=`<tr><td>${esc(cfg.days[d])}</td>`;
-      for(let p=0;p<plistU.length;p++){
-        const on=(rawUn[d]||[]).includes(p) || noteMapU[d+'|'+p];
-        unavGrid+=`<td class="uv ${on?'on':''}" data-act="uv" data-d="${d}" data-p="${p}">${on?'✕':''}</td>`;
+    if(isPerdanaTeacher(cfg, tn)){
+      // Guru perdana: 12 lajur masa perdana penuh
+      const pvT=perdanaViewOf(cfg);
+      unavGrid=`<table class="mini unav"><thead><tr><th></th>${pvT.cols.map((p,i)=>`<th>${i+1}<br><small>${esc(p.start)}</small></th>`).join('')}</tr></thead><tbody>`;
+      for(let d=0;d<cfg.days.length;d++){
+        unavGrid+=`<tr><td>${esc(cfg.days[d])}</td>`;
+        for(let c2=0;c2<pvT.cols.length;c2++){
+          const idx=pvT.idxOfCol[c2];
+          const idxTog=(pvT.idxToggleOfCol[c2]!==undefined)?pvT.idxToggleOfCol[c2]:idx;
+          const on=(idxTog!==undefined && (rawUn[d]||[]).includes(idxTog)) || noteMapU[d+'|'+c2];
+          unavGrid+=`<td class="uv ${on?'on':''}" data-act="uv" data-d="${d}" data-p="${c2}" data-perdana="1">${on?'✕':''}</td>`;
+        }
+        unavGrid+=`</tr>`;
       }
-      unavGrid+=`</tr>`;
+    } else {
+      unavGrid=`<table class="mini unav"><thead><tr><th></th>${cfg.periods.map((p,i)=>`<th>${i+1}<br><small>${esc(p.start)}</small></th>`).join('')}</tr></thead><tbody>`;
+      for(let d=0;d<cfg.days.length;d++){
+        unavGrid+=`<tr><td>${esc(cfg.days[d])}</td>`;
+        for(let p=0;p<cfg.periods.length;p++){
+          const on=(rawUn[d]||[]).includes(p);
+          unavGrid+=`<td class="uv ${on?'on':''}" data-act="uv" data-d="${d}" data-p="${p}">${on?'✕':''}</td>`;
+        }
+        unavGrid+=`</tr>`;
+      }
     }
     unavGrid+=`</tbody></table>
     <div class="hint">Klik sel untuk tanda slot guru ini TIDAK tersedia untuk PPKI (cth: mengajar aliran perdana). ✕ = tidak tersedia.</div>`;
@@ -1118,16 +1216,28 @@ document.addEventListener('click', e=>{
   }
   else if(act==='uv'){
     const tn=cfg.teachers[ui.tetapanGuru].name;
-    const d=+t.dataset.d, p=+t.dataset.p;
+    const d=+t.dataset.d;
     if(!cfg.unavailable[tn]) cfg.unavailable[tn]=cfg.days.map(()=>[]);
     const arr=cfg.unavailable[tn][d];
-    const ix=arr.indexOf(p);
-    const hasNote=((cfg.perdanaNotes||{})[tn]||[]).some(n=>n[0]===d && p>=n[1] && p<=n[2]);
-    if(ix>=0 || hasNote){
-      if(ix>=0) arr.splice(ix,1);
-      if(hasNote) removeNoteAt(cfg, tn, d, p);
+    if(t.dataset.perdana==='1'){
+      // grid perdana: data-p ialah KOLUM (0..11); nota dalam ruang kolum, solver dalam ruang idx PPKI
+      const c2=+t.dataset.p;
+      const pvC=perdanaViewOf(cfg);
+      const idx=pvC.idxOfCol[c2];
+      const idxTog=(pvC.idxToggleOfCol[c2]!==undefined)?pvC.idxToggleOfCol[c2]:idx;
+      const hasNote=((cfg.perdanaNotes||{})[tn]||[]).some(n=>n[0]===d && c2>=n[1] && c2<=n[2]);
+      const marked=(idxTog!==undefined && arr.includes(idxTog)) || hasNote;
+      if(marked){
+        if(idx!==undefined){ const ix2=arr.indexOf(idx); if(ix2>=0) arr.splice(ix2,1); }
+        if(idxTog!==undefined && idxTog!==idx){ const ix3=arr.indexOf(idxTog); if(ix3>=0) arr.splice(ix3,1); }
+        if(hasNote) removeNoteAt(cfg, tn, d, c2);
+      } else if(idxTog!==undefined && !arr.includes(idxTog)){
+        arr.push(idxTog);
+      }
     } else {
-      arr.push(p);
+      const p=+t.dataset.p;
+      const ix=arr.indexOf(p);
+      if(ix>=0) arr.splice(ix,1); else arr.push(p);
     }
   }
   else if(act==='s-add'){
