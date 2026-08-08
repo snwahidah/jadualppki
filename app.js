@@ -545,6 +545,20 @@ function periodHeaderCells(cfg, plist, noRehat){
   return h;
 }
 
+// Buang liputan nota perdana pada satu slot (potong / pisah julat)
+function removeNoteAt(cfg, tname, d, p){
+  const list=(cfg.perdanaNotes||{})[tname];
+  if(!list) return;
+  const out=[];
+  for(const n of list){
+    if(n[0]!==d || p<n[1] || p>n[2]){ out.push(n); continue; }
+    const dd=n[0], ps=n[1], pe=n[2], label=n[3];
+    if(ps<=p-1) out.push([dd, ps, p-1, label]);
+    if(p+1<=pe) out.push([dd, p+1, pe, label]);
+  }
+  cfg.perdanaNotes[tname]=out;
+}
+
 // Waktu khas guru perdana (cth: Hafizah — ikut masa aliran perdana, tanpa rehat PPKI)
 function teacherTimeView(cfg, tname){
   const t=(cfg.teachers||[]).find(x=>x.name===tname);
@@ -1108,7 +1122,13 @@ document.addEventListener('click', e=>{
     if(!cfg.unavailable[tn]) cfg.unavailable[tn]=cfg.days.map(()=>[]);
     const arr=cfg.unavailable[tn][d];
     const ix=arr.indexOf(p);
-    if(ix>=0) arr.splice(ix,1); else arr.push(p);
+    const hasNote=((cfg.perdanaNotes||{})[tn]||[]).some(n=>n[0]===d && p>=n[1] && p<=n[2]);
+    if(ix>=0 || hasNote){
+      if(ix>=0) arr.splice(ix,1);
+      if(hasNote) removeNoteAt(cfg, tn, d, p);
+    } else {
+      arr.push(p);
+    }
   }
   else if(act==='s-add'){
     const cname=cfg.classes[+t.dataset.c].name;
